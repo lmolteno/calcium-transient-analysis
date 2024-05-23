@@ -1,5 +1,6 @@
-import { ChangeEventHandler, Dispatch, useCallback, useEffect, useState } from "react";
+import { ChangeEventHandler, Dispatch, useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Button, Card, CardBody, CardHeader, Divider, Radio, RadioGroup } from "@nextui-org/react";
 
 const parseCsv = (csv: string): Cell[] => {
   let records: Cell[] = []
@@ -42,6 +43,7 @@ export const CellManager = ({ setData, setUpdateCell }: CellManagerProps) => {
   const [selectedFile, setSelectedFile] = useState<File | undefined>();
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
   const [cells, setCells] = useState<Cell[]>([]);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     setData(selectedCell)
@@ -82,33 +84,41 @@ export const CellManager = ({ setData, setUpdateCell }: CellManagerProps) => {
     })
   });
 
-  useEffect(() => setCells(cellQuery.data ?? []), [setCells, cellQuery.data]);
+  useEffect(() => {
+    const newCells = cellQuery.data ?? []
+    setCells(newCells)
+    if (newCells.length > 0) {
+      setSelectedCell(newCells[0])
+    }
+  }, [setCells, cellQuery.data]);
 
-  const onCellSelect: ChangeEventHandler<HTMLInputElement> = useCallback(e => {
-    if (e.target?.value) {
-      const selected = cells.find(c => `${c.id}` === e.target.value)
-      if (selected) {
-        setSelectedCell(selected)
-      }
+  const onCellSelect  = useCallback((v: string) => {
+    const selected = cells.find(c => `${c.id}` === v)
+    if (selected) {
+      setSelectedCell(selected)
     }
   }, [setSelectedCell, cells])
 
   return (
-    <div className="flex flex-col">
-      <div className="border p-3">
-        <input type="file" onChange={onFileChange}/>
+    <div className="w-4/12">
+      <h1 className="py-3 text-center">Slice</h1>
+      <Divider />
+      <div className="flex justify-between w-full items-center py-4">
+        Cell selection
+        <input className="hidden" type="file" ref={inputRef} onChange={onFileChange} />
+        <Button onClick={() => inputRef.current?.click()}>Select File</Button>
       </div>
-      <div className="border p-3">
-        {!cellQuery.data 
-          ? <p>Loading...</p> 
-          : <div className="flex flex-col" onChange={onCellSelect}>
-            {cellQuery.data.map(c => (
-            <div className="flex justify-between">
-              <p>{c.name}</p>
-              <input type="radio" id={`cell-${c.id}`} name="selectedCell" value={`${c.id}`} />
-            </div>))}
-          </div>}
-      </div>
+      <Divider />
+        {!selectedFile && 
+          <p className="text-content4 text-center py-3">Select a file to continue</p>}
+        {!!cells.length && 
+          <RadioGroup 
+            label={`Select cell from ${selectedFile?.name}`} 
+            value={`${selectedCell?.id}`}
+            onValueChange={onCellSelect}>
+              {cells.map(c => (<Radio value={`${c.id}`}>{c.name}</Radio>))}
+          </RadioGroup>
+        }
     </div>
   )
 };

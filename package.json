@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@nextui-org/react": "^2.3.6",
     "@tanstack/react-query": "^5.36.2",
     "ahooks": "^3.7.11",
     "d3": "^7.9.0",
+    "framer-motion": "^11.2.4",
     "ml-convolution": "^2.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

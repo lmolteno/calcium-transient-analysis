@@ -4,7 +4,7 @@ import { useSize } from "ahooks";
 import { formatSeconds } from "../utils";
 
 export type Datum = [number, number];
-const margin = { top: 10, right: 30, bottom: 30, left: 30 };
+const margin = { top: 20, right: 30, bottom: 30, left: 40 };
 
 interface LineChartProps { 
   data: Datum[], 
@@ -18,12 +18,12 @@ export const generateTickValues = (extent: [number, number]) => {
   const rawTicks = () => {
     const minutesInRange = (extent[1] - extent[0]) / 60
     if (minutesInRange > 8) {
-      return Array.from(Array(Math.ceil(minutesInRange) + 1)).map((d, i) => (extent[0] - (extent[0] % 60)) + i * 60)
+      return Array.from(Array(Math.ceil(minutesInRange) + 1)).map((_, i) => (extent[0] - (extent[0] % 60)) + i * 60)
     }
     if (minutesInRange > 4) {
-      return Array.from(Array(Math.ceil(minutesInRange * 2) + 1)).map((d, i) => (extent[0] - (extent[0] % 30)) + i * 30)
+      return Array.from(Array(Math.ceil(minutesInRange * 2) + 1)).map((_, i) => (extent[0] - (extent[0] % 30)) + i * 30)
     }
-    return Array.from(Array(Math.ceil(minutesInRange * 4) + 1)).map((d, i) => (extent[0] - (extent[0] % 15)) + i * 15)
+    return Array.from(Array(Math.ceil(minutesInRange * 4) + 1)).map((_, i) => (extent[0] - (extent[0] % 15)) + i * 15)
   }
   return rawTicks().filter(t => extent[0] <= t && extent[1] >= t)
 }
@@ -72,7 +72,7 @@ const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChart
     svg.select(".area")
       .attr("d", d3.area()
         .x(d => x(d[0]))
-        .y1(d => y(d[1]))
+        .y1(d => Math.min(y(baseline), y(d[1])))
         .y0(y(baseline))(filteredData)
       );
 
@@ -81,6 +81,7 @@ const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChart
       .attr('width', width)
       .attr('y',  y(baseline) - 2.5)
       .attr('height', 5)
+      // @ts-ignore
       .call(d3.drag().on('drag', (e) => setBaseline(y.invert(e.y))))
 
     svg.select(".dots")
@@ -95,23 +96,24 @@ const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChart
 
     svg.select(".sections")
       .selectAll(".section")
-      .data(sections, d => d.name)
+      // @ts-ignore
+      .data(sections, (d: Section) => d.name)
       .join("rect")
         .classed("section", true)
         .attr("fill", "#b369a2")
-        .attr("x", d => d3.max([margin.left, x(d.start)]))
-        .attr("y", d => margin.top)
-        .attr("width", d => d3.min([x(d.end), size.width - margin.right]) - d3.max([margin.left, x(d.start)]))
-        .attr("height", d => height);
+        .attr("x", d => Math.max(margin.left, x(d.start)))
+        .attr("y", margin.top)
+        .attr("width", d => Math.min(x(d.end), size.width - margin.right) - Math.max(margin.left, x(d.start)))
+        .attr("height", height);
   }, [data, size, baseline, extent, sections, setBaseline])
 
   return (
-    <div className="chart" ref={containerRef}>
+    <div className="h-full w-full" ref={containerRef}>
       <svg id="lineChart">
         <g className="sections" opacity={0.5}></g>
         <g className="dots"></g>
         <path className="area" fill="#69b3a23f" stroke="#69b3a2"></path>
-        <rect className="baseline-drag" opacity={0}></rect>
+        <rect className="baseline-drag cursor-n-resize" opacity={0}></rect>
         <g className="axisBottom"></g>
         <g className="axisLeft"></g>
       </svg>

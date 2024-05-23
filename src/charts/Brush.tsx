@@ -4,7 +4,7 @@ import { useSize } from "ahooks";
 import { formatSeconds } from "../utils";
 
 export type Datum = [number, number];
-const margin = { top: 10, right: 30, bottom: 10, left: 30 };
+const margin = { top: 10, right: 30, bottom: 10, left: 40 };
 
 interface BrushProps { 
   data: Datum[], 
@@ -69,7 +69,7 @@ const Brush = ({ data, baseline, setExtent, setResetFunc } : BrushProps) => {
   }, [data, size, baseline])
 
   return (
-    <div className="chart" ref={containerRef}>
+    <div className="w-full h-full" ref={containerRef}>
       <svg id="brushChart">
         <path className="area" fill="#69b3a23f" stroke="#69b3a2"></path>
         <g className="brush"></g>
