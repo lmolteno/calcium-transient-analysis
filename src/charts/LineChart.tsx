@@ -2,6 +2,7 @@ import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import { useSize } from "ahooks";
 import { formatSeconds } from "../utils";
+import { getSectionColour, section4ap, section4apColour, sectionAcsf, sectionAcsfColour } from "../constants";
 
 export type Datum = [number, number];
 const margin = { top: 20, right: 30, bottom: 30, left: 40 };
@@ -103,11 +104,7 @@ const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChart
       .data(sections, (d: Section) => d.name)
       .join("rect")
         .classed("section", true)
-        .attr("fill", d => {
-          if (d.name === "4-AP") return "#b369a2";
-          if (d.name === "aCSF") return "#b3a269";
-          return '#ff0000'
-        })
+        .attr("fill", d => getSectionColour(d.name))
         .attr("x", d => Math.max(margin.left, x(d.start)))
         .attr("y", margin.top)
         .attr("width", d => Math.min(x(d.end), size.width - margin.right) - Math.max(margin.left, x(d.start)))

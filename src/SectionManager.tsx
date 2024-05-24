@@ -1,5 +1,6 @@
 import { Input, Tabs, Tab, Divider } from "@nextui-org/react";
 import { findErrorsInSection, formatSeconds } from "./utils";
+import { getSectionColour } from "./constants";
 
 interface SectionManagerProps {
   sections: Section[]
@@ -9,25 +10,28 @@ interface SectionManagerProps {
 export const SectionManager = ({ sections, setSections }: SectionManagerProps) => {
   return (
     <div className="w-6/12">
-      <h1 className="py-3 text-center">Sections</h1>
+      <h1 className="py-3 text-center">sections</h1>
       <Divider />
-      <Tabs aria-label="Sections" items={[{label: 'aCSF'}, {label: '4-AP'}]} className="py-3 content-center">
-        {(sectionName) => {
-          const section: Partial<Section> = sections.find(s => s.name == sectionName.label) ?? { name: sectionName.label };
-          const updateSection = (newSection: Section) => setSections(old => [...old.filter(s => s.name !== sectionName.label), newSection])
+      <Tabs aria-label="sections" items={[{label: 'aCSF'}, {label: '4-AP'}]} className="content-center pt-3" size="lg">
+        {(sectionTab) => {
+          const section: Partial<Section> = sections.find(s => s.name == sectionTab.label) ?? { name: sectionTab.label };
+          const updateSection = (newSection: Section) => setSections(old => [...old.filter(s => s.name !== sectionTab.label), newSection])
           const errors = findErrorsInSection(section);
           return (
-            <Tab key={sectionName.label} title={sectionName.label}>
+            <Tab key={sectionTab.label} title={sectionTab.label}>
               <div className="grid grid-cols-2 gap-3">
                 <Input 
                   type="number" label="Start (seconds)" 
                   value={section.start?.toString()} onValueChange={v => updateSection({...section, start: parseFloat(v)})} 
                 />
                 <Input type="number" label="End (seconds)" value={section.end?.toString()} onValueChange={v => updateSection({...section, end: parseFloat(v)})} />
-                {section.start ? <p>Start: {formatSeconds(section.start)}</p> : <p>Specify start</p>}
-                {section.end ? <p>End: {formatSeconds(section.end)}</p> : <p>Specify end</p>}
+                {section.start && <p>Start: {formatSeconds(section.start)}</p>}
+                {section.end && <p>End: {formatSeconds(section.end)}</p>}
               </div>
               {errors.map(e => <p className="text-danger">{e}</p>)}
+              <div className="flex flex-row items-center gap-3 pt-3">
+                <p className="w-full h-10 rounded-md" style={{ backgroundColor: getSectionColour(sectionTab.label) }}> </p>
+              </div>
             </Tab>
           )
         }}

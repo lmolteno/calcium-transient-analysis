@@ -31,18 +31,18 @@ export const CellDisplay = ({
         <div className="h-96 flex justify-center">
           {mappedData && cell
             ? <LineChart data={mappedData} setBaseline={updateBaseline} baseline={cell.baseline} extent={extent} sections={sections} />
-            : <p className="my-auto text-content4">Select a cell</p>}
+            : <p className="my-auto text-content4">select a cell</p>}
         </div>
         <Divider />
         <div className="h-24 flex justify-center">
           {mappedData && cell
             ? <BrushChart data={mappedData} baseline={cell.baseline} setExtent={setExtent} setResetFunc={setResetFunc} />
-            : <p className="my-auto text-content4">Select a cell</p>}
+            : <p className="my-auto text-content4">select a cell</p>}
         </div>
+        <Button onClick={reset} disabled={extent === undefined} className="m-3" variant={extent === undefined ? "flat" : "solid"} color="secondary">
+          reset zoom
+        </Button>
       </Card>
-      <Button onClick={reset} disabled={extent === undefined}>
-        Reset Zoom
-      </Button>
     </div>
   )
 }

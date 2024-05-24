@@ -11,10 +11,12 @@ function App() {
   const [convolution, setConvolution] = useState(1);
   const [samplingRate, setSamplingRate] = useState<number>(1.1);
   const [baselineSamples, setBaselineSamples] = useState(30);
-  const [baselineEnabled, setBaselineEnabled] = useState(false);
+  const [baselineEnabled, setBaselineEnabled] = useState(true);
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>()
   const [updateCell, setUpdateCell] = useState<(update: (c: Cell) => Cell) => void>(() => {})
+  const [goPrevious, setGoPrevious] = useState<() => void>(() => {})
+  const [goNext, setGoNext] = useState<() => void>(() => {})
 
   const processedCellData = useMemo(
     () => selectedCell ? processCell(selectedCell, baselineEnabled, baselineSamples, convolution, samplingRate) : [],
@@ -41,6 +43,8 @@ function App() {
                 baselineEnabled={baselineEnabled} setBaselineEnabled={setBaselineEnabled}
                 convolution={convolution}
                 sections={validSections}
+                setGoPrevious={setGoPrevious}
+                setGoNext={setGoNext}
               />
             </div>
           </aside>
@@ -55,7 +59,14 @@ function App() {
             />
             <div className="flex gap-5">
               <SectionManager sections={sections} setSections={setSections} />
-              <CellProperties cell={selectedCell} updateCell={updateCell} convolution={convolution} setConvolution={setConvolution} sections={sections} mappedData={processedCellData} />
+              <CellProperties 
+                cell={selectedCell} updateCell={updateCell} 
+                convolution={convolution} setConvolution={setConvolution} 
+                sections={sections} 
+                mappedData={processedCellData} 
+                goPrevious={goPrevious}
+                goNext={goNext}
+              />
             </div>
           </main>
         </div>

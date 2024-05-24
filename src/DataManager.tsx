@@ -2,6 +2,10 @@ import { ChangeEventHandler, Dispatch, useCallback, useEffect, useMemo, useRef, 
 import { useQuery } from "@tanstack/react-query";
 import { Button, Divider, Input, Radio, RadioGroup, Switch } from "@nextui-org/react";
 import { integrateSamples, processCell } from "./utils";
+import { getSectionColour } from "./constants";
+
+const notFloatRegex = /[^\d\.]/
+const mod = (n: number, m: number) => (n % m + m) % m;
 
 const parseCsv = (csv: string): Cell[] => {
   let records: Cell[] = []
@@ -12,7 +16,7 @@ const parseCsv = (csv: string): Cell[] => {
     if (cells.some(cell => isNaN(cell as unknown as number)) && records.length == 0) {
       records = cells.map((c, idx) => ({ 
         id: idx, 
-        name: c.length > 0 ? c : `Record ${idx + 1}`, 
+        name: c.length > 0 ? c : `Cell ${idx + 1}`, 
         data: [],
         baseline: 1,
         excluded: false
@@ -21,7 +25,7 @@ const parseCsv = (csv: string): Cell[] => {
     } else if (records.length == 0) {
       records = cells.map((_, idx) => ({ 
         id: idx, 
-        name: `Record ${idx + 1}`, 
+        name: `Cell ${idx + 1}`, 
         data: [], 
         baseline: 1,
         excluded: false
@@ -48,15 +52,23 @@ interface CellManagerProps {
   baselineEnabled: boolean
   convolution: number
   sections: Section[]
+  setGoPrevious: Dispatch<() => void>
+  setGoNext: Dispatch<() => void>
 }
 
-export const CellManager = ({ setData, setUpdateCell, sampleRate, setSampleRate, baselineSamples, setBaselineSamples, baselineEnabled, setBaselineEnabled, convolution, sections }: CellManagerProps) => {
+export const CellManager = ({ 
+  setData, setUpdateCell, 
+  sampleRate, setSampleRate, 
+  baselineSamples, setBaselineSamples, 
+  baselineEnabled, setBaselineEnabled, 
+  convolution, sections, 
+  setGoNext, setGoPrevious }: CellManagerProps) => {
   const [selectedFile, setSelectedFile] = useState<File | undefined>();
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
   const [cells, setCells] = useState<Cell[]>([]);
-
+  const [sampleRateString, setSampleRateString] = useState(sampleRate.toString());
+  const [sampleRateError, setSampleRateError] = useState("");
   const inputRef = useRef(null);
-
   const orderedCells = useMemo(() => [...cells].sort((a, b) => a.id - b.id), [cells]);
 
   useEffect(() => {
@@ -105,12 +117,23 @@ export const CellManager = ({ setData, setUpdateCell, sampleRate, setSampleRate,
     }
   }, [setCells, cellQuery.data]);
 
-  const onCellSelect  = useCallback((v: string) => {
+  const onCellSelect = useCallback((v: string) => {
     const selected = cells.find(c => `${c.id}` === v)
-    if (selected) {
+    const selectedIndex = cells.findIndex(c => `${c.id}` === v)
+    if (selected && selectedIndex !== -1) {
       setSelectedCell(selected)
     }
-  }, [setSelectedCell, cells])
+  }, [setSelectedCell, cells, setGoPrevious, setGoNext])
+
+  useEffect(() => {
+    const selectedIndex = cells.findIndex(c => c.id === selectedCell?.id)
+    setGoPrevious(() => () => {
+      setSelectedCell(cells[mod((selectedIndex - 1), cells.length)])
+    });
+    setGoNext(() => () => {
+      setSelectedCell(cells[(selectedIndex + 1) % cells.length])
+    });
+  }, [selectedCell, setSelectedCell, setGoNext, setGoPrevious]);
 
   const cellsWithAreas = useQuery({
     queryKey: 
@@ -119,7 +142,6 @@ export const CellManager = ({ setData, setUpdateCell, sampleRate, setSampleRate,
       return cells
         .map(c => {
           const processed = processCell(c, baselineEnabled, baselineSamples, convolution, sampleRate)
-          console.log(baselineEnabled, baselineSamples, convolution, sampleRate)
           return {
             cell: c, 
             sections: sections.map(s => {
@@ -130,14 +152,27 @@ export const CellManager = ({ setData, setUpdateCell, sampleRate, setSampleRate,
         });
     }
   })
-  console.log(cellsWithAreas.data)
+
+  useEffect(() => {
+    const parsedSampleRate = parseFloat(sampleRateString);
+    if (isNaN(parsedSampleRate) || notFloatRegex.test(sampleRateString)) {
+      setSampleRateError("enter a valid number");
+      return;
+    }
+    if (parsedSampleRate <= 0) {
+      setSampleRateError("enter a number above 0");
+      return;
+    }
+    setSampleRate(parsedSampleRate);
+    setSampleRateError("");
+  }, [sampleRateString, setSampleRate])
 
   return (
     <div className="w-full">
       <div className="flex justify-between w-full items-center pb-3">
-        Slice Upload
+        slice upload
         <input className="hidden" type="file" ref={inputRef} onChange={onFileChange} />
-        <Button onClick={() => inputRef.current?.click()}>select file</Button>
+        <Button onClick={() => inputRef.current?.click()} color="primary">select file</Button>
       </div>
       <Divider />
       <div className="py-4 grid grid-cols-2 gap-4">
@@ -152,29 +187,32 @@ export const CellManager = ({ setData, setUpdateCell, sampleRate, setSampleRate,
         <Switch isSelected={baselineEnabled} onValueChange={setBaselineEnabled}>calculate baseline</Switch>
         <Input
           className="col-span-2"
-          type="number" 
           label="sampling rate"
-          value={sampleRate.toString()}
-          onValueChange={v => !isNaN(parseFloat(v)) && parseFloat(v) > 0 ? setSampleRate(parseFloat(v)) : {} } 
+          isInvalid={sampleRateError !== ""}
+          errorMessage={sampleRateError}
+          value={sampleRateString}
+          onValueChange={setSampleRateString} 
         />
       </div>
       <Divider />
         {!selectedFile && 
-          <p className="text-content4 text-center py-3">Select a file to continue</p>}
+          <p className="text-content4 text-center py-3">select a file to continue</p>}
         {!!cells.length && 
+        <>
           <RadioGroup 
             className="w-full pt-3"
             value={`${selectedCell?.id}`}
             onValueChange={onCellSelect}>
               <div className="flex flex-row gap-2 w-full pe-4 text-default-500">
                 <p className="flex-grow">{selectedFile?.name}</p>
-                {sections.map(s => <p className="w-16 text-default-500 text-right">{s.name}</p>)}
+                {sections.map(s => <div className="w-16 flex-row flex items-center gap-2 justify-end"><p className="size-4 rounded-md" style={{ backgroundColor: getSectionColour(s.name) }}> </p><p className="text-default-500 text-right">{s.name}</p></div>)}
               </div>
               {orderedCells.map(c => {
                 const cellWithArea = cellsWithAreas.data?.find(cwa => cwa.cell.id === c.id);
                 const sections = cellWithArea?.sections ?? []
                 return (
               <Radio
+                key={c.id}
                 classNames={{
                   base: "w-full max-w-none",
                   labelWrapper: "w-full",
@@ -189,6 +227,8 @@ export const CellManager = ({ setData, setUpdateCell, sampleRate, setSampleRate,
                 }
               )}
           </RadioGroup>
+          <Button className="w-full mt-3" color="primary">export</Button>
+        </>
         }
     </div>
   )

@@ -1,6 +1,9 @@
-import { Divider, Slider, Checkbox } from "@nextui-org/react";
+import { Divider, Slider, Checkbox, ButtonGroup, Button } from "@nextui-org/react";
 import { integrateSamples } from "./utils";
 import { useCallback, useMemo } from "react";
+import leftChevron from "./assets/left.svg?raw"
+import rightChevron from "./assets/right.svg?raw"
+import { getSectionColour } from "./constants";
 
 interface CellPropertiesProps {
   cell?: Cell;
@@ -9,9 +12,11 @@ interface CellPropertiesProps {
   updateCell: (updateFunc: (c: Cell) => Cell) => void
   sections: Section[];
   mappedData: Datum[];
+  goPrevious: () => void;
+  goNext: () => void;
 }
 
-export const CellProperties = ({ cell, updateCell, convolution, setConvolution, sections, mappedData }: CellPropertiesProps) => {
+export const CellProperties = ({ cell, updateCell, convolution, setConvolution, sections, mappedData, goPrevious, goNext }: CellPropertiesProps) => {
   const sectionsWithArea = useMemo(() => {
     return sections.map(s => {
       const samples = (mappedData ?? []).filter(d => d[0] <= s.end && d[0] >= s.start)
@@ -29,10 +34,10 @@ export const CellProperties = ({ cell, updateCell, convolution, setConvolution, 
 
   return (
     <div className="w-6/12">
-      <h1 className="py-3 text-center">Cell</h1>
+      <h1 className="py-3 text-center">cell</h1>
       <Divider />
       { cell ?
-      <div className="py-3">
+      <div className="py-3 grid grid-cols-1 gap-3">
       {false && 
         <Slider
           label="Convolution width" 
@@ -42,21 +47,27 @@ export const CellProperties = ({ cell, updateCell, convolution, setConvolution, 
           maxValue={99} 
           onChange={e => setConvolution(e as number)}
         />}
+        <div className="grid grid-cols-2 gap-3">
+          {
+            sectionsWithArea.map(s => <div className="p-3 flex flex-row items-center justify-center gap-2"><p className="size-4 rounded-md" style={{ backgroundColor: getSectionColour(s.name) }}></p><p>{s.name}: {s.area.toFixed(3)}</p></div>)
+          }
+        </div>
         <Slider
-          label="Baseline" 
+          label="baseline" 
           value={cell?.baseline} 
-          marks={[{ value: 1, label: '1' }]}
+          marks={[{ value: 0, label: '0' }, { value: 1, label: '1' }, { value: 2, label: '2' }]}
           minValue={0} 
           step={0.01}
           maxValue={2} 
           onChange={e => updateBaseline(e as number)}
         />
         <Checkbox isSelected={cell.excluded} onValueChange={updateExcluded}>Excluded</Checkbox>
-        {
-          sectionsWithArea.map(s => <p>{s.name}: {s.area}</p>)
-        }
+        <div className="grid grid-cols-2 gap-3">
+          <Button color="primary" onPress={goPrevious} startContent={<span className="stroke-white" dangerouslySetInnerHTML={{ __html: leftChevron }}></span>}>previous</Button>
+          <Button color="primary" onPress={goNext} endContent={<span className="stroke-white" dangerouslySetInnerHTML={{ __html: rightChevron }}></span>}>next</Button>
+        </div>
       </div>
-      : <p className="text-content4 text-center py-3">Select a cell to continue</p>
+      : <p className="text-content4 text-center py-3">select a cell to continue</p>
       }
     </div>
   );
