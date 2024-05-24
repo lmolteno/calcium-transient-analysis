@@ -2,7 +2,8 @@ interface Cell {
   id: number,
   name: string,
   data: number[],
-  baseline: number
+  baseline: number,
+  excluded: boolean
 }
 
 interface Section {

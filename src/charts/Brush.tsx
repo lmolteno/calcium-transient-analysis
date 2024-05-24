@@ -2,6 +2,7 @@ import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import { useSize } from "ahooks";
 import { formatSeconds } from "../utils";
+import { generateTickValues } from "./LineChart";
 
 export type Datum = [number, number];
 const margin = { top: 10, right: 30, bottom: 10, left: 40 };
@@ -31,8 +32,9 @@ const Brush = ({ data, baseline, setExtent, setResetFunc } : BrushProps) => {
 
     const xs = data.map(d => d[0])
     const ys = data.map(d => d[1])
+    const xExtent = [d3.min(xs)!, d3.max(xs)!]
     const x = d3.scaleLinear()
-      .domain([d3.min(xs)!, d3.max(xs)!])
+      .domain(xExtent)
       .range([margin.left, width + margin.left]);
 
     const y = d3.scaleLinear()
@@ -46,7 +48,7 @@ const Brush = ({ data, baseline, setExtent, setResetFunc } : BrushProps) => {
     svg.select(".axisBottom")
       .attr("transform", `translate(0, ${height})`)
       // @ts-ignore
-      .call(d3.axisBottom(x).tickFormat(formatSeconds))
+      .call(d3.axisBottom(x).tickValues(generateTickValues(xExtent)).tickFormat(formatSeconds));
 
     svg.select(".area")
       .attr("d", d3.area()

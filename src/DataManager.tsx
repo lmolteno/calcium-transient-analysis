@@ -1,6 +1,7 @@
-import { ChangeEventHandler, Dispatch, useCallback, useEffect, useRef, useState } from "react";
+import { ChangeEventHandler, Dispatch, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Card, CardBody, CardHeader, Divider, Radio, RadioGroup } from "@nextui-org/react";
+import { Button, Divider, Input, Radio, RadioGroup, Switch } from "@nextui-org/react";
+import { integrateSamples, processCell } from "./utils";
 
 const parseCsv = (csv: string): Cell[] => {
   let records: Cell[] = []
@@ -13,7 +14,8 @@ const parseCsv = (csv: string): Cell[] => {
         id: idx, 
         name: c.length > 0 ? c : `Record ${idx + 1}`, 
         data: [],
-        baseline: 1
+        baseline: 1,
+        excluded: false
       }))
       return
     } else if (records.length == 0) {
@@ -21,7 +23,8 @@ const parseCsv = (csv: string): Cell[] => {
         id: idx, 
         name: `Record ${idx + 1}`, 
         data: [], 
-        baseline: 1 
+        baseline: 1,
+        excluded: false
       }))
     }
     
@@ -36,14 +39,25 @@ type CellUpdateFunc = (c: Cell) => Cell
 
 interface CellManagerProps { 
   setData: (c: Cell | undefined) => void
-  setUpdateCell: Dispatch<(update: CellUpdateFunc) => void>
+  setUpdateCell: Dispatch<(update: CellUpdateFunc) => void>,
+  setSampleRate: (sample: number) => void
+  sampleRate: number
+  setBaselineSamples: (sample: number) => void
+  baselineSamples: number
+  setBaselineEnabled: (disabled: boolean) => void
+  baselineEnabled: boolean
+  convolution: number
+  sections: Section[]
 }
 
-export const CellManager = ({ setData, setUpdateCell }: CellManagerProps) => {
+export const CellManager = ({ setData, setUpdateCell, sampleRate, setSampleRate, baselineSamples, setBaselineSamples, baselineEnabled, setBaselineEnabled, convolution, sections }: CellManagerProps) => {
   const [selectedFile, setSelectedFile] = useState<File | undefined>();
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
   const [cells, setCells] = useState<Cell[]>([]);
+
   const inputRef = useRef(null);
+
+  const orderedCells = useMemo(() => [...cells].sort((a, b) => a.id - b.id), [cells]);
 
   useEffect(() => {
     setData(selectedCell)
@@ -53,7 +67,6 @@ export const CellManager = ({ setData, setUpdateCell }: CellManagerProps) => {
         if (!selectedCell) {
           return
         }
-        console.log('updating cell to', update(selectedCell))
         setCells(oldCells => [...oldCells.filter(c => c.id !== selectedCell?.id), update(selectedCell)])
         setSelectedCell(update(selectedCell))
       }
@@ -99,24 +112,82 @@ export const CellManager = ({ setData, setUpdateCell }: CellManagerProps) => {
     }
   }, [setSelectedCell, cells])
 
+  const cellsWithAreas = useQuery({
+    queryKey: 
+      ['sectionsWithArea', baselineEnabled, baselineSamples, convolution, sampleRate, cells, sections],
+    queryFn: () => {
+      return cells
+        .map(c => {
+          const processed = processCell(c, baselineEnabled, baselineSamples, convolution, sampleRate)
+          console.log(baselineEnabled, baselineSamples, convolution, sampleRate)
+          return {
+            cell: c, 
+            sections: sections.map(s => {
+            const samples = processed.filter(d => d[0] <= s.end && d[0] >= s.start)
+            return {...s, area: integrateSamples(samples, c.baseline)}
+          })
+         }
+        });
+    }
+  })
+  console.log(cellsWithAreas.data)
+
   return (
-    <div className="w-4/12">
-      <h1 className="py-3 text-center">Slice</h1>
-      <Divider />
-      <div className="flex justify-between w-full items-center py-4">
-        Cell selection
+    <div className="w-full">
+      <div className="flex justify-between w-full items-center pb-3">
+        Slice Upload
         <input className="hidden" type="file" ref={inputRef} onChange={onFileChange} />
-        <Button onClick={() => inputRef.current?.click()}>Select File</Button>
+        <Button onClick={() => inputRef.current?.click()}>select file</Button>
+      </div>
+      <Divider />
+      <div className="py-4 grid grid-cols-2 gap-4">
+        <Input
+          type="number" 
+          label="samples for baseline"
+          min={1}
+          value={baselineSamples.toString()}
+          disabled={!baselineEnabled}
+          onValueChange={v => !isNaN(parseInt(v)) ? setBaselineSamples(parseInt(v)) : {} } 
+        />
+        <Switch isSelected={baselineEnabled} onValueChange={setBaselineEnabled}>calculate baseline</Switch>
+        <Input
+          className="col-span-2"
+          type="number" 
+          label="sampling rate"
+          value={sampleRate.toString()}
+          onValueChange={v => !isNaN(parseFloat(v)) && parseFloat(v) > 0 ? setSampleRate(parseFloat(v)) : {} } 
+        />
       </div>
       <Divider />
         {!selectedFile && 
           <p className="text-content4 text-center py-3">Select a file to continue</p>}
         {!!cells.length && 
           <RadioGroup 
-            label={`Select cell from ${selectedFile?.name}`} 
+            className="w-full pt-3"
             value={`${selectedCell?.id}`}
             onValueChange={onCellSelect}>
-              {cells.map(c => (<Radio value={`${c.id}`}>{c.name}</Radio>))}
+              <div className="flex flex-row gap-2 w-full pe-4 text-default-500">
+                <p className="flex-grow">{selectedFile?.name}</p>
+                {sections.map(s => <p className="w-16 text-default-500 text-right">{s.name}</p>)}
+              </div>
+              {orderedCells.map(c => {
+                const cellWithArea = cellsWithAreas.data?.find(cwa => cwa.cell.id === c.id);
+                const sections = cellWithArea?.sections ?? []
+                return (
+              <Radio
+                classNames={{
+                  base: "w-full max-w-none",
+                  labelWrapper: "w-full",
+                  label: "w-full justify-end"
+                }} 
+                value={`${c.id}`}>
+                  <div className={"flex flex-row gap-2 justify-end w-full" + (c.excluded ? " text-default-500" : '')}>
+                    <p className="flex-grow">{c.name}</p>
+                    {sections.map(s => <p className={"w-16 text-right" + (c.excluded ? " line-through" : '')}>{s.area.toFixed(2)}</p>)}
+                  </div>
+               </Radio>)
+                }
+              )}
           </RadioGroup>
         }
     </div>

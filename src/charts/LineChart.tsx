@@ -17,6 +17,9 @@ interface LineChartProps {
 export const generateTickValues = (extent: [number, number]) => {
   const rawTicks = () => {
     const minutesInRange = (extent[1] - extent[0]) / 60
+    if (minutesInRange > 16) {
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map((_, i) => (extent[0] - (extent[0] % 120)) + i * 120)
+    }
     if (minutesInRange > 8) {
       return Array.from(Array(Math.ceil(minutesInRange) + 1)).map((_, i) => (extent[0] - (extent[0] % 60)) + i * 60)
     }
@@ -100,7 +103,11 @@ const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChart
       .data(sections, (d: Section) => d.name)
       .join("rect")
         .classed("section", true)
-        .attr("fill", "#b369a2")
+        .attr("fill", d => {
+          if (d.name === "4-AP") return "#b369a2";
+          if (d.name === "aCSF") return "#b3a269";
+          return '#ff0000'
+        })
         .attr("x", d => Math.max(margin.left, x(d.start)))
         .attr("y", margin.top)
         .attr("width", d => Math.min(x(d.end), size.width - margin.right) - Math.max(margin.left, x(d.start)))

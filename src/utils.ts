@@ -31,3 +31,26 @@ export const integrateSamples = (samples: Datum[], baseline: number) => {
       return acc + (next[0] - curr[0]) * ((curr[1] + next[1]) / 2)
     }, 0)
 }
+
+export const processCell = (cell: Cell, baselineAdjust: boolean, baselineSamples: number, convolution: number, samplingRate: number) => {
+  const data = cell.data.map((d, i) => [i, d] as Datum);
+  const baselined = baselineAdjust ? calculateBaseline(data, baselineSamples) : data
+
+  const convolved = convolveData(baselined, convolution, 1)
+  return convolved.map(d => [d[0] * samplingRate, d[1]] as Datum)
+}
+  
+
+export const findErrorsInSection = (section: Partial<Section>): string[] => {
+  let errors: string[] = []
+  if (section.end == undefined) {
+    errors = [...errors, 'end must be specified']
+  }
+  if (section.start == undefined) {
+    errors = [...errors, 'start must be specified']
+  }
+  if (section.start && section.end && section.start >= section.end) {
+    errors = [...errors, 'start must be before end']
+  }
+  return errors
+}
