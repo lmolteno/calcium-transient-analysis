@@ -113,7 +113,7 @@ const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChart
 
   return (
     // @ts-ignore
-    <div className="h-full w-full" ref={containerRef}>
+    <div className="size-full" ref={containerRef}>
       <svg id="lineChart">
         <g className="sections" opacity={0.5}></g>
         <g className="dots"></g>

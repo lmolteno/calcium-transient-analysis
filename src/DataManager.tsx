@@ -126,11 +126,12 @@ export const CellManager = ({
   }, [setSelectedCell, cells, setGoPrevious, setGoNext])
 
   useEffect(() => {
-    const selectedIndex = cells.findIndex(c => c.id === selectedCell?.id)
     setGoPrevious(() => () => {
+      const selectedIndex = cells.findIndex(c => c.id === selectedCell?.id)
       setSelectedCell(cells[mod((selectedIndex - 1), cells.length)])
     });
     setGoNext(() => () => {
+      const selectedIndex = cells.findIndex(c => c.id === selectedCell?.id)
       setSelectedCell(cells[(selectedIndex + 1) % cells.length])
     });
   }, [selectedCell, setSelectedCell, setGoNext, setGoPrevious]);
