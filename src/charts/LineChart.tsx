@@ -2,7 +2,7 @@ import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import { useSize } from "ahooks";
 import { formatSeconds } from "../utils";
-import { getSectionColour, section4ap, section4apColour, sectionAcsf, sectionAcsfColour } from "../constants";
+import { getSectionColour } from "../constants";
 
 export type Datum = [number, number];
 const margin = { top: 20, right: 30, bottom: 30, left: 40 };
@@ -112,6 +112,7 @@ const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChart
   }, [data, size, baseline, extent, sections, setBaseline])
 
   return (
+    // @ts-ignore
     <div className="h-full w-full" ref={containerRef}>
       <svg id="lineChart">
         <g className="sections" opacity={0.5}></g>

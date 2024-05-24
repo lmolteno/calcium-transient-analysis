@@ -172,6 +172,7 @@ export const CellManager = ({
       <div className="flex justify-between w-full items-center pb-3">
         slice upload
         <input className="hidden" type="file" ref={inputRef} onChange={onFileChange} />
+        {/* @ts-ignore */}
         <Button onClick={() => inputRef.current?.click()} color="primary">select file</Button>
       </div>
       <Divider />

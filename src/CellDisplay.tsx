@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react"
+import { useState, useCallback } from "react"
 import LineChart from "./charts/LineChart"
 import BrushChart from "./charts/Brush"
 import { Button, Card, Divider } from "@nextui-org/react";

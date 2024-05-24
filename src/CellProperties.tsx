@@ -1,4 +1,4 @@
-import { Divider, Slider, Checkbox, ButtonGroup, Button } from "@nextui-org/react";
+import { Divider, Slider, Checkbox, Button } from "@nextui-org/react";
 import { integrateSamples } from "./utils";
 import { useCallback, useMemo } from "react";
 import leftChevron from "./assets/left.svg?raw"

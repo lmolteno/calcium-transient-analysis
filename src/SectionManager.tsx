@@ -21,12 +21,19 @@ export const SectionManager = ({ sections, setSections }: SectionManagerProps) =
             <Tab key={sectionTab.label} title={sectionTab.label}>
               <div className="grid grid-cols-2 gap-3">
                 <Input 
-                  type="number" label="Start (seconds)" 
-                  value={section.start?.toString()} onValueChange={v => updateSection({...section, start: parseFloat(v)})} 
+                  type="number" label="start (seconds)" 
+                  value={section.start?.toString()} 
+                  // @ts-ignore
+                  onValueChange={v => updateSection({...section, start: parseFloat(v)})} 
                 />
-                <Input type="number" label="End (seconds)" value={section.end?.toString()} onValueChange={v => updateSection({...section, end: parseFloat(v)})} />
-                {section.start && <p>Start: {formatSeconds(section.start)}</p>}
-                {section.end && <p>End: {formatSeconds(section.end)}</p>}
+                <Input 
+                  type="number" label="end (seconds)" 
+                  value={section.end?.toString()} 
+                  // @ts-ignore
+                  onValueChange={v => updateSection({...section, end: parseFloat(v)})} 
+                />
+                {section.start && <p>start: {formatSeconds(section.start)}</p>}
+                {section.end && <p>end: {formatSeconds(section.end)}</p>}
               </div>
               {errors.map(e => <p className="text-danger">{e}</p>)}
               <div className="flex flex-row items-center gap-3 pt-3">
