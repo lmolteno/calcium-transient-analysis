@@ -5,4 +5,5 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   assetsInclude: ["assets/*"],
   plugins: [react()],
+  base: '/calcium-transient-analysis/'
 })
