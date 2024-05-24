@@ -49,7 +49,7 @@ export const CellProperties = ({ cell, updateCell, convolution, setConvolution, 
         />}
         <div className="grid grid-cols-2 gap-3">
           {
-            sectionsWithArea.map(s => <div className="p-3 flex flex-row items-center justify-center gap-2"><p className="size-4 rounded-md" style={{ backgroundColor: getSectionColour(s.name) }}></p><p>{s.name}: {s.area.toFixed(3)}</p></div>)
+            sectionsWithArea.map(s => <div className="py-3 flex flex-row items-center gap-2"><p className="size-4 rounded-md" style={{ backgroundColor: getSectionColour(s.name) }}></p><p><strong>{s.name}</strong>: {s.area.toFixed(3)}</p></div>)
           }
         </div>
         <Slider

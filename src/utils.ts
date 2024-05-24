@@ -1,4 +1,5 @@
 import { convolve } from './utils/convolve'
+import * as d3 from 'd3';
 
 // samples the first `baselineSample` points - to calculate the baseline (denominator of result)
 export const calculateBaseline = (data: Datum[], samples: number): Datum[] => {
@@ -23,14 +24,17 @@ export const formatSeconds = (seconds: number) => {
 
 // returns area in units of yx - i.e. expects samples to be in time-domain
 export const integrateSamples = (samples: Datum[], baseline: number) => {
+  const xSamples = samples.map(s => s[0])
+  const timeRange = (d3.max(xSamples) ?? 1) - (d3.min(xSamples) ?? 0);
+
   return samples
     .map(d => [d[0], Math.max(0, d[1] - baseline)])
     .reduce((acc, curr, idx, arr) => {
       const next = idx < arr.length ? arr[idx + 1] : undefined
       if (!next) return acc;
       return acc + (next[0] - curr[0]) * ((curr[1] + next[1]) / 2)
-    }, 0)
-}
+    }, 0) / timeRange
+};
 
 export const processCell = (cell: Cell, baselineAdjust: boolean, baselineSamples: number, convolution: number, samplingRate: number) => {
   const data = cell.data.map((d, i) => [i, d] as Datum);
