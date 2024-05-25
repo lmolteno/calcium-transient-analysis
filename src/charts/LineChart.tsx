@@ -104,7 +104,10 @@ const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChart
       .data(sections, (d: Section) => d.name)
       .join("rect")
         .classed("section", true)
+        .attr("stroke", d => getSectionColour(d.name))
         .attr("fill", d => getSectionColour(d.name))
+        .attr("fill-opacity", 0.25)
+        .attr("stroke-opacity", 0.5)
         .attr("x", d => Math.max(margin.left, x(d.start)))
         .attr("y", margin.top)
         .attr("width", d => Math.min(x(d.end), size.width - margin.right) - Math.max(margin.left, x(d.start)))
@@ -115,7 +118,7 @@ const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChart
     // @ts-ignore
     <div className="size-full" ref={containerRef}>
       <svg id="lineChart">
-        <g className="sections" opacity={0.5}></g>
+        <g className="sections"></g>
         <g className="dots"></g>
         <path className="area" fill="#69b3a23f" stroke="#69b3a2"></path>
         <rect className="baseline-drag cursor-n-resize" opacity={0}></rect>

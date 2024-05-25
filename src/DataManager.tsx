@@ -1,7 +1,7 @@
 import { ChangeEventHandler, Dispatch, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button, Divider, Input, Radio, RadioGroup, Switch } from "@nextui-org/react";
-import { integrateSamples, processCell } from "./utils";
+import { exportCells, integrateSamples, processCell } from "./utils";
 import { getSectionColour } from "./constants";
 
 const notFloatRegex = /[^\d\.]/
@@ -127,20 +127,19 @@ export const CellManager = ({
 
   useEffect(() => {
     setGoPrevious(() => () => {
-      const selectedIndex = cells.findIndex(c => c.id === selectedCell?.id)
-      setSelectedCell(cells[mod((selectedIndex - 1), cells.length)])
+      const selectedIndex = orderedCells.findIndex(c => c.id === selectedCell?.id)
+      setSelectedCell(orderedCells[mod((selectedIndex - 1), orderedCells.length)])
     });
     setGoNext(() => () => {
-      const selectedIndex = cells.findIndex(c => c.id === selectedCell?.id)
-      setSelectedCell(cells[(selectedIndex + 1) % cells.length])
+      const selectedIndex = orderedCells.findIndex(c => c.id === selectedCell?.id)
+      setSelectedCell(orderedCells[(selectedIndex + 1) % orderedCells.length])
     });
   }, [selectedCell, setSelectedCell, setGoNext, setGoPrevious]);
 
   const cellsWithAreas = useQuery({
-    queryKey: 
-      ['sectionsWithArea', baselineEnabled, baselineSamples, convolution, sampleRate, cells, sections],
+    queryKey: ['sectionsWithArea', baselineEnabled, baselineSamples, convolution, sampleRate, orderedCells, sections],
     queryFn: () => {
-      return cells
+      return orderedCells
         .map(c => {
           const processed = processCell(c, baselineEnabled, baselineSamples, convolution, sampleRate)
           return {
@@ -229,7 +228,8 @@ export const CellManager = ({
                 }
               )}
           </RadioGroup>
-          <Button className="w-full mt-3" color="primary">export</Button>
+          <p className="text-default-500 text-right pe-4">Areas are in (Δf/f)·s</p>
+          <Button className="w-full mt-3" color="primary" onPress={() => exportCells(selectedFile?.name ?? '', cellsWithAreas.data ?? [])}>export</Button>
         </>
         }
     </div>

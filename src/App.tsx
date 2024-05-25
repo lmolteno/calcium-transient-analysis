@@ -58,7 +58,7 @@ function App() {
               updateCell={updateCell}
             />
             <div className="flex gap-5">
-              <SectionManager sections={sections} setSections={setSections} />
+              <SectionManager sections={sections} setSections={setSections} sampleRate={samplingRate} />
               <CellProperties 
                 cell={selectedCell} updateCell={updateCell} 
                 convolution={convolution} setConvolution={setConvolution} 
