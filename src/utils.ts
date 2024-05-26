@@ -75,7 +75,6 @@ export const exportCells = (filename: string, cellsAndSections: CellAndSections[
     + filteredSections.map(c => [c.cell.name, ...c.sections.map(s => s.area.toString())].join(",")).join("\n");
 
   const encodedUri = encodeURI(csvContent);
-  window.open(encodedUri);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
   link.setAttribute("download", updateFilename(filename));
