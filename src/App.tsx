@@ -36,8 +36,8 @@ function App() {
         <div className="flex flex-row flex-wrap py-4">
           <aside className="w-full sm:w-1/3 md:w-1/4 px-2">
             <div className="sticky top-0 p-4 w-full">
-              <CellManager 
-                setData={setSelectedCell} setUpdateCell={setUpdateCell} 
+              <CellManager
+                setData={setSelectedCell} setUpdateCell={setUpdateCell}
                 sampleRate={samplingRate} setSampleRate={setSamplingRate}
                 baselineSamples={baselineSamples} setBaselineSamples={setBaselineSamples}
                 baselineEnabled={baselineEnabled} setBaselineEnabled={setBaselineEnabled}
@@ -49,21 +49,21 @@ function App() {
             </div>
           </aside>
           <main role="main" className="w-full sm:w-2/3 md:w-3/4 pt-1 px-2">
-            <CellDisplay 
-              cell={selectedCell} 
+            <CellDisplay
+              cell={selectedCell}
               mappedData={processedCellData}
-              samplingRate={1.1} 
-              convolutionWidth={convolution} 
-              sections={validSections} 
+              samplingRate={samplingRate}
+              convolutionWidth={convolution}
+              sections={validSections}
               updateCell={updateCell}
             />
             <div className="flex gap-5">
               <SectionManager sections={sections} setSections={setSections} sampleRate={samplingRate} />
-              <CellProperties 
-                cell={selectedCell} updateCell={updateCell} 
-                convolution={convolution} setConvolution={setConvolution} 
-                sections={sections} 
-                mappedData={processedCellData} 
+              <CellProperties
+                cell={selectedCell} updateCell={updateCell}
+                convolution={convolution} setConvolution={setConvolution}
+                sections={sections}
+                mappedData={processedCellData}
                 goPrevious={goPrevious}
                 goNext={goNext}
               />

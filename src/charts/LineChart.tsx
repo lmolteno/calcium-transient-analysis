@@ -7,11 +7,13 @@ import { getSectionColour } from "../constants";
 export type Datum = [number, number];
 const margin = { top: 20, right: 30, bottom: 30, left: 40 };
 
-interface LineChartProps { 
-  data: Datum[], 
+interface LineChartProps {
+  data: Datum[],
   sections: Section[]
-  baseline: number, 
+  baseline: number,
   setBaseline: (bl: number) => void,
+  threshold: number,
+  setThreshold: (th: number) => void,
   extent: [number, number] | undefined,
 }
 
@@ -32,10 +34,10 @@ export const generateTickValues = (extent: [number, number]) => {
   return rawTicks().filter(t => extent[0] <= t && extent[1] >= t)
 }
 
-const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChartProps) => {
+const LineChart = ({ data, setBaseline, baseline, threshold, setThreshold, extent, sections } : LineChartProps) => {
   const containerRef = useRef<HTMLDivElement>();
   const size = useSize(containerRef);
-  
+
   useEffect(() => {
     if (!size) {
       return
@@ -86,7 +88,21 @@ const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChart
       .attr('y',  y(baseline) - 2.5)
       .attr('height', 5)
       // @ts-ignore
-      .call(d3.drag().on('drag', (e) => setBaseline(y.invert(e.y))))
+      .call(d3.drag().on('drag', (e) => setBaseline(y.invert(e.y))));
+
+    svg.select(".threshold")
+      .attr('x1', margin.left)
+      .attr('x2', width + margin.left)
+      .attr('y1',  y(threshold))
+      .attr('y2',  y(threshold));
+
+    svg.select(".threshold-drag")
+      .attr('x', margin.left)
+      .attr('width', width)
+      .attr('y',  y(threshold) - 2.5)
+      .attr('height', 5)
+      // @ts-ignore
+      .call(d3.drag().on('drag', (e) => setThreshold(y.invert(e.y))))
 
     svg.select(".dots")
       .selectAll(".dot")
@@ -122,6 +138,8 @@ const LineChart = ({ data, setBaseline, baseline, extent, sections } : LineChart
         <g className="dots"></g>
         <path className="area" fill="#69b3a23f" stroke="#69b3a2"></path>
         <rect className="baseline-drag cursor-n-resize" opacity={0}></rect>
+        <rect className="threshold-drag cursor-n-resize" opacity={0}></rect>
+        <line className="threshold" stroke-width="2" stroke="#b3a269"></line>
         <g className="axisBottom"></g>
         <g className="axisLeft"></g>
       </svg>

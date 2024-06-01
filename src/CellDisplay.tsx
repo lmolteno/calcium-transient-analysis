@@ -3,8 +3,8 @@ import LineChart from "./charts/LineChart"
 import BrushChart from "./charts/Brush"
 import { Button, Card, Divider } from "@nextui-org/react";
 
-interface CellDisplayProps { 
-  cell?: Cell, 
+interface CellDisplayProps {
+  cell?: Cell,
   mappedData?: Datum[]
   updateCell: (updateFunc: (c: Cell) => Cell) => void
   samplingRate?: number,
@@ -12,8 +12,8 @@ interface CellDisplayProps {
   sections?: Section[]
 }
 
-export const CellDisplay = ({ 
-  cell, 
+export const CellDisplay = ({
+  cell,
   updateCell,
   mappedData,
   sections = [],
@@ -24,13 +24,25 @@ export const CellDisplay = ({
   const updateBaseline = useCallback((bl: number) => {
     updateCell(c => ({...c, baseline: bl}))
   }, [updateCell]);
-  
+
+  const updateThreshold = useCallback((th: number) => {
+    updateCell(c => ({...c, peakThreshold: th}))
+  }, [updateCell]);
+
   return (
     <div>
       <Card>
         <div className="h-96 flex justify-center">
           {mappedData && cell
-            ? <LineChart data={mappedData} setBaseline={updateBaseline} baseline={cell.baseline} extent={extent} sections={sections} />
+            ? <LineChart
+                data={mappedData}
+                setBaseline={updateBaseline}
+                setThreshold={updateThreshold}
+                baseline={cell.baseline}
+                threshold={cell.peakThreshold}
+                extent={extent}
+                sections={sections}
+              />
             : <p className="my-auto text-content4">select a cell</p>}
         </div>
         <Divider />

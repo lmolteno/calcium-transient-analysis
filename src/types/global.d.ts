@@ -3,6 +3,7 @@ interface Cell {
   name: string,
   data: number[],
   baseline: number,
+  peakThreshold: number,
   excluded: boolean
 }
 

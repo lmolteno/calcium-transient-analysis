@@ -14,24 +14,26 @@ const parseCsv = (csv: string): Cell[] => {
 
     // header row
     if (cells.some(cell => isNaN(cell as unknown as number)) && records.length == 0) {
-      records = cells.map((c, idx) => ({ 
-        id: idx, 
-        name: c.length > 0 ? c : `Cell ${idx + 1}`, 
+      records = cells.map((c, idx) => ({
+        id: idx,
+        name: c.length > 0 ? c : `Cell ${idx + 1}`,
         data: [],
         baseline: 1,
+        peakThreshold: 1.1,
         excluded: false
       }))
       return
     } else if (records.length == 0) {
-      records = cells.map((_, idx) => ({ 
-        id: idx, 
-        name: `Cell ${idx + 1}`, 
-        data: [], 
+      records = cells.map((_, idx) => ({
+        id: idx,
+        name: `Cell ${idx + 1}`,
+        data: [],
         baseline: 1,
+        peakThreshold: 1.1,
         excluded: false
       }))
     }
-    
+
     cells
       .filter(c => !isNaN(parseFloat(c)))
       .forEach((c, i) => records[i].data = [...records[i].data, parseFloat(c)])
@@ -41,7 +43,7 @@ const parseCsv = (csv: string): Cell[] => {
 
 type CellUpdateFunc = (c: Cell) => Cell
 
-interface CellManagerProps { 
+interface CellManagerProps {
   setData: (c: Cell | undefined) => void
   setUpdateCell: Dispatch<(update: CellUpdateFunc) => void>,
   setSampleRate: (sample: number) => void
@@ -56,12 +58,12 @@ interface CellManagerProps {
   setGoNext: Dispatch<() => void>
 }
 
-export const CellManager = ({ 
-  setData, setUpdateCell, 
-  sampleRate, setSampleRate, 
-  baselineSamples, setBaselineSamples, 
-  baselineEnabled, setBaselineEnabled, 
-  convolution, sections, 
+export const CellManager = ({
+  setData, setUpdateCell,
+  sampleRate, setSampleRate,
+  baselineSamples, setBaselineSamples,
+  baselineEnabled, setBaselineEnabled,
+  convolution, sections,
   setGoNext, setGoPrevious }: CellManagerProps) => {
   const [selectedFile, setSelectedFile] = useState<File | undefined>();
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
@@ -91,8 +93,8 @@ export const CellManager = ({
     }
   }, [setSelectedFile])
 
-  const cellQuery = useQuery<Cell[]>({ 
-    queryKey: ['read-file', selectedFile?.name], 
+  const cellQuery = useQuery<Cell[]>({
+    queryKey: ['read-file', selectedFile?.name],
     queryFn: () => new Promise((res, rej) => {
       if (!selectedFile) {
         res([])
@@ -143,7 +145,7 @@ export const CellManager = ({
         .map(c => {
           const processed = processCell(c, baselineEnabled, baselineSamples, convolution, sampleRate)
           return {
-            cell: c, 
+            cell: c,
             sections: sections.map(s => {
             const samples = processed.filter(d => d[0] <= s.end && d[0] >= s.start)
             return {...s, area: integrateSamples(samples, c.baseline)}
@@ -178,12 +180,12 @@ export const CellManager = ({
       <Divider />
       <div className="py-4 grid grid-cols-2 gap-4">
         <Input
-          type="number" 
+          type="number"
           label="samples for baseline"
           min={1}
           value={baselineSamples.toString()}
           disabled={!baselineEnabled}
-          onValueChange={v => !isNaN(parseInt(v)) ? setBaselineSamples(parseInt(v)) : {} } 
+          onValueChange={v => !isNaN(parseInt(v)) ? setBaselineSamples(parseInt(v)) : {} }
         />
         <Switch isSelected={baselineEnabled} onValueChange={setBaselineEnabled}>calculate baseline</Switch>
         <Input
@@ -192,15 +194,15 @@ export const CellManager = ({
           isInvalid={sampleRateError !== ""}
           errorMessage={sampleRateError}
           value={sampleRateString}
-          onValueChange={setSampleRateString} 
+          onValueChange={setSampleRateString}
         />
       </div>
       <Divider />
-        {!selectedFile && 
+        {!selectedFile &&
           <p className="text-content4 text-center py-3">select a file to continue</p>}
-        {!!cells.length && 
+        {!!cells.length &&
         <>
-          <RadioGroup 
+          <RadioGroup
             className="w-full pt-3"
             value={`${selectedCell?.id}`}
             onValueChange={onCellSelect}>
@@ -218,7 +220,7 @@ export const CellManager = ({
                   base: "w-full max-w-none",
                   labelWrapper: "w-full",
                   label: "w-full justify-end"
-                }} 
+                }}
                 value={`${c.id}`}>
                   <div className={"flex flex-row gap-2 justify-end w-full" + (c.excluded ? " text-default-500" : '')}>
                     <p className="flex-grow">{c.name}</p>
