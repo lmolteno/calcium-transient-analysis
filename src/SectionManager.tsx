@@ -104,8 +104,8 @@ export const SectionManager = ({ sections, setSections, sampleRate }: SectionMan
                     }
                   }}
                 />
-                {section.start && <p>start: {formatSeconds(section.start)}</p>}
-                {section.end && <p>end: {formatSeconds(section.end)}</p>}
+                {section.start && <p>start: {formatSeconds(section.start, 2)}</p>}
+                {section.end && <p>end: {formatSeconds(section.end, 2)}</p>}
               </div>
               {errors.map(e => <p className="text-danger">{e}</p>)}
             </Tab>

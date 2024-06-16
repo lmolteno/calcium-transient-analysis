@@ -49,7 +49,7 @@ const Brush = ({ data, baseline, setExtent, setResetFunc } : BrushProps) => {
     svg.select(".axisBottom")
       .attr("transform", `translate(0, ${height})`)
       // @ts-ignore
-      .call(d3.axisBottom(x).tickValues(generateTickValues(xExtent)).tickFormat(formatSeconds));
+      .call(d3.axisBottom(x).tickValues(generateTickValues(xExtent)).tickFormat(n => formatSeconds(n)));
 
     svg.select(".area")
       .attr("d", d3.area()

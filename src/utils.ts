@@ -15,10 +15,10 @@ export const convolveData = (data: Datum[], convolution: number, offset: number)
       .map((d, i) => [i, d + offset] as Datum)
 };
 
-export const formatSeconds = (seconds: number) => {
+export const formatSeconds = (seconds: number, decimalPrecision = 0) => {
   const minutes = Math.floor(seconds / 60)
   const leftOverSeconds = seconds - (minutes * 60)
-  return [String(minutes), String(leftOverSeconds.toFixed(2)).padStart(2, '0')].filter(d => d).join(":")
+  return [String(minutes), String(leftOverSeconds.toFixed(decimalPrecision)).padStart(2, '0')].filter(d => d).join(":")
 }
 
 // returns area in units of yx - i.e. expects samples to be in time-domain

@@ -68,7 +68,7 @@ const LineChart = ({ data, setBaseline, baseline, threshold, setThreshold, exten
     svg.select(".axisBottom")
       .attr("transform", `translate(0, ${height + margin.top})`)
       // @ts-expect-error d3 types aren't great for calls
-      .call(d3.axisBottom(x).tickValues(generateTickValues(xExtent)).tickFormat(formatSeconds));
+      .call(d3.axisBottom(x).tickValues(generateTickValues(xExtent)).tickFormat(n => formatSeconds(n)));
 
     svg.select(".axisLeft")
       .attr("transform", `translate(${margin.left}, 0)`)
