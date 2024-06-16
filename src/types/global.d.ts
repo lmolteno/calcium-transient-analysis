@@ -18,3 +18,5 @@ interface Section {
 }
 
 type Datum = [number, number]
+
+type Peak = { start: number, end: number, length: number }

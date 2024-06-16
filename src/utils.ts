@@ -57,7 +57,7 @@ export const findErrorsInSection = (section: Partial<Section>): string[] => {
 
 interface CellAndSections {
   cell: Cell
-  sections: (Section & { area: number })[]
+  sections: (Section & { area: number, totalPeakTime: number, proportionPeakTime: number })[]
 }
 
 const updateFilename = (filename: string): string => {
@@ -71,14 +71,43 @@ export const exportCells = (filename: string, cellsAndSections: CellAndSections[
   }
   const sectionNames = filteredSections[0].sections.map(s => s.name)
   const csvContent = "data:text/csv;charset=utf-8,"
-    + `"Cell Name","${sectionNames.join('","')}"\n`
-    + filteredSections.map(c => [c.cell.name, ...c.sections.map(s => s.area.toString())].join(",")).join("\n");
+    + `"Cell Name","${sectionNames.flatMap(n => [`${n} area`, `${n} peak time`, `${n} peak proportion`]).join('","')}"\n`
+    + filteredSections.map(c => [c.cell.name, ...c.sections.flatMap(s => [s.area.toString(), s.totalPeakTime.toString(), s.proportionPeakTime.toString()])].join(",")).join("\n");
 
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
   link.setAttribute("download", updateFilename(filename));
+
   document.body.appendChild(link); // Required for FF
   
-  link.click(); // This will download the data file named "my_data.csv".
+  link.click();
 }
+
+const lerp = (a: number, b: number, alpha: number) => a + alpha * (b - a);
+
+
+export const calculatePeaks = (data: Datum[], threshold = 1): Peak[] => data.reduce((accumulator, current, idx, arr) => {
+  if (idx == 0) { return accumulator; }
+  const previous = arr[idx - 1];
+  if (previous[1] < threshold && current[1] > threshold) {
+    return [...accumulator, { start: lerp(previous[0], current[0], current[1] - threshold), end: -1, length: 0 }];
+  } else if (previous[1] > threshold && current[1] < threshold) {
+    const currentIntersection = accumulator[accumulator.length - 1]
+    if (currentIntersection) {
+      const end = lerp(current[0], previous[0], previous[1] - threshold)
+      return [...accumulator.slice(0, -1), { ...currentIntersection, end, length: end - currentIntersection.start }];
+    }
+  }
+  return accumulator
+}, [] as Peak[]).filter(p => p.end !== -1);
+
+export const filterPeaksToSection = (peaks: Peak[], section: Section) => peaks.flatMap(p => {
+  const startIncluded = p.start >= section.start && p.start <= section.end;
+  const endIncluded = p.end <= section.end && p.end >= section.start;
+
+  if (endIncluded && startIncluded) return [p];
+  if (!endIncluded && startIncluded) return [{ ...p, end: section.end, length: section.end - p.start }];
+  if (endIncluded && !startIncluded) return [{ ...p, start: section.start, length: p.end - section.start }];
+  return []
+});

@@ -1,7 +1,7 @@
 import { ChangeEventHandler, Dispatch, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button, Divider, Input, Radio, RadioGroup, Switch } from "@nextui-org/react";
-import { exportCells, integrateSamples, processCell } from "./utils";
+import { calculatePeaks, exportCells, filterPeaksToSection, integrateSamples, processCell } from "./utils";
 import { getSectionColour } from "./constants";
 
 const notFloatRegex = /[^\d\.]/
@@ -144,11 +144,18 @@ export const CellManager = ({
       return orderedCells
         .map(c => {
           const processed = processCell(c, baselineEnabled, baselineSamples, convolution, sampleRate)
+          const peaks = calculatePeaks(processed, c.peakThreshold);
           return {
             cell: c,
             sections: sections.map(s => {
             const samples = processed.filter(d => d[0] <= s.end && d[0] >= s.start)
-            return {...s, area: integrateSamples(samples, c.baseline)}
+            const filteredPeaks = filterPeaksToSection(peaks, s);
+            const totalPeakTime = filteredPeaks.reduce((s, c) => s + c.length, 0);
+            return {...s, 
+              area: integrateSamples(samples, c.baseline),
+              totalPeakTime,
+              proportionPeakTime: totalPeakTime / (s.end - s.start)
+            }
           })
          }
         });

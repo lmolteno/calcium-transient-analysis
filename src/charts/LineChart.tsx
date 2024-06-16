@@ -67,12 +67,12 @@ const LineChart = ({ data, setBaseline, baseline, threshold, setThreshold, exten
 
     svg.select(".axisBottom")
       .attr("transform", `translate(0, ${height + margin.top})`)
-      // @ts-ignore
+      // @ts-expect-error d3 types aren't great for calls
       .call(d3.axisBottom(x).tickValues(generateTickValues(xExtent)).tickFormat(formatSeconds));
 
     svg.select(".axisLeft")
       .attr("transform", `translate(${margin.left}, 0)`)
-      // @ts-ignore
+      // @ts-expect-error d3 types aren't great for calls
       .call(d3.axisLeft(y));
 
     svg.select(".area")
@@ -87,7 +87,7 @@ const LineChart = ({ data, setBaseline, baseline, threshold, setThreshold, exten
       .attr('width', width)
       .attr('y',  y(baseline) - 2.5)
       .attr('height', 5)
-      // @ts-ignore
+      // @ts-expect-error d3 types aren't great for calls
       .call(d3.drag().on('drag', (e) => setBaseline(y.invert(e.y))));
 
     svg.select(".threshold")
@@ -101,7 +101,7 @@ const LineChart = ({ data, setBaseline, baseline, threshold, setThreshold, exten
       .attr('width', width)
       .attr('y',  y(threshold) - 2.5)
       .attr('height', 5)
-      // @ts-ignore
+      // @ts-expect-error d3 types aren't great for calls
       .call(d3.drag().on('drag', (e) => setThreshold(y.invert(e.y))))
 
     svg.select(".dots")

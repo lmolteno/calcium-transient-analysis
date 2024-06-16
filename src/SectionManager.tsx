@@ -16,12 +16,12 @@ export const SectionManager = ({ sections, setSections, sampleRate }: SectionMan
       startSampleString: s.start ? (s.start / sampleRate).toFixed(2) : undefined,
       endSampleString: s.end ? (s.end / sampleRate).toFixed(2) : undefined,
     })));
-  }, [sampleRate])
+  }, [sampleRate, setSections])
   return (
     <div className="w-6/12">
       <h1 className="py-3 text-center">sections</h1>
       <Divider />
-      <Tabs aria-label="sections" items={[{label: 'aCSF'}, {label: '4-AP'}]} className="content-center pt-3" size="lg">
+      <Tabs aria-label="sections" items={[{label: 'aCSF'}, {label: '4-AP'}]} className="pt-3" size="lg">
         {(sectionTab) => {
           const section: Partial<Section> = sections.find(s => s.name == sectionTab.label) ?? { name: sectionTab.label };
 
@@ -42,7 +42,11 @@ export const SectionManager = ({ sections, setSections, sampleRate }: SectionMan
           const updateSection = (newSection: Partial<Section>) => setSections(old => [...old.filter(s => s.name !== sectionTab.label), newSection])
           const errors = findErrorsInSection(section);
           return (
-            <Tab key={sectionTab.label} title={sectionTab.label}>
+            <Tab key={sectionTab.label} title={
+              <div className="flex flex-row items-center gap-2">
+                <p className="size-4 rounded-md" style={{ backgroundColor: getSectionColour(sectionTab.label) }}></p><p><strong>{sectionTab.label}</strong></p>
+              </div>
+            }>
               <div className="grid grid-cols-2 gap-3">
                 <Input 
                   label="start (seconds)" 
@@ -104,9 +108,6 @@ export const SectionManager = ({ sections, setSections, sampleRate }: SectionMan
                 {section.end && <p>end: {formatSeconds(section.end)}</p>}
               </div>
               {errors.map(e => <p className="text-danger">{e}</p>)}
-              <div className="flex flex-row items-center gap-3 pt-3">
-                <p className="w-full h-10 rounded-md" style={{ backgroundColor: getSectionColour(sectionTab.label) }}> </p>
-              </div>
             </Tab>
           )
         }}
