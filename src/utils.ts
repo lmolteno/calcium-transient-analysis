@@ -57,7 +57,7 @@ export const findErrorsInSection = (section: Partial<Section>): string[] => {
 
 interface CellAndSections {
   cell: Cell
-  sections: (Section & { area: number, totalPeakTime: number, proportionPeakTime: number })[]
+  sections: (Section & { area: number, peaks: number, totalPeakTime: number, proportionPeakTime: number })[]
 }
 
 const updateFilename = (filename: string): string => {
@@ -71,15 +71,20 @@ export const exportCells = (filename: string, cellsAndSections: CellAndSections[
   }
   const sectionNames = filteredSections[0].sections.map(s => s.name)
   const csvContent = "data:text/csv;charset=utf-8,"
-    + `"Cell Name","${sectionNames.flatMap(n => [`${n} area`, `${n} peak time`, `${n} peak proportion`]).join('","')}"\n`
-    + filteredSections.map(c => [c.cell.name, ...c.sections.flatMap(s => [s.area.toString(), s.totalPeakTime.toString(), s.proportionPeakTime.toString()])].join(",")).join("\n");
+    + `"Cell Name","${sectionNames.flatMap(n => [`${n} area`, `${n} peaks`, `${n} peak time`, `${n} peak proportion`]).join('","')}"\n`
+    + filteredSections.map(c => [
+      c.cell.name, 
+      ...c.sections.flatMap(s => 
+        [s.area.toString(), s.peaks.toString(), s.totalPeakTime.toString(), s.proportionPeakTime.toString()]
+      )].join(","))
+      .join("\n");
 
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
   link.setAttribute("download", updateFilename(filename));
 
-  document.body.appendChild(link); // Required for FF
+  document.body.appendChild(link);
   
   link.click();
 }

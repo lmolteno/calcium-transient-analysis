@@ -68,7 +68,7 @@ export const CellProperties = ({ cell, updateCell, convolution, setConvolution, 
               </div>
               <p><strong>area: </strong> {s.area.toFixed(3)}</p>
               <p><strong>peaks: </strong> {s.peaks.length}</p>
-              <p><strong>peak time: </strong> {s.totalPeakTime.toFixed(3)}s ({(s.proportionPeakTime * 100).toFixed(2)}%)</p>
+              <p><strong>peak time: </strong> {s.totalPeakTime.toFixed(1)}s ({(s.proportionPeakTime * 100).toPrecision(3)}%)</p>
             </div>)
           }
         </div>

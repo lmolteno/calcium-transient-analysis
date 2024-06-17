@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button, Divider, Input, Radio, RadioGroup, Switch } from "@nextui-org/react";
 import { calculatePeaks, exportCells, filterPeaksToSection, integrateSamples, processCell } from "./utils";
 import { getSectionColour } from "./constants";
+import { filter } from "d3";
 
 const notFloatRegex = /[^\d\.]/
 const mod = (n: number, m: number) => (n % m + m) % m;
@@ -153,6 +154,7 @@ export const CellManager = ({
             const totalPeakTime = filteredPeaks.reduce((s, c) => s + c.length, 0);
             return {...s, 
               area: integrateSamples(samples, c.baseline),
+              peaks: filteredPeaks.length,
               totalPeakTime,
               proportionPeakTime: totalPeakTime / (s.end - s.start)
             }
@@ -231,7 +233,7 @@ export const CellManager = ({
                 value={`${c.id}`}>
                   <div className={"flex flex-row gap-2 justify-end w-full" + (c.excluded ? " text-default-500" : '')}>
                     <p className="flex-grow">{c.name}</p>
-                    {sections.map(s => <p className={"w-16 text-right" + (c.excluded ? " line-through" : '')}>{s.area.toFixed(2)}</p>)}
+                    {sections.map(s => <p className={"w-16 text-right" + (c.excluded ? " line-through" : '')}>{(100 * s.proportionPeakTime).toPrecision(3)}%</p>)}
                   </div>
                </Radio>)
                 }
