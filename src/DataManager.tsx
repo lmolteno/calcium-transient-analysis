@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Button, Divider, Input, Radio, RadioGroup, Switch } from "@nextui-org/react";
 import { calculatePeaks, exportCells, filterPeaksToSection, integrateSamples, processCell } from "./utils";
 import { getSectionColour } from "./constants";
-import { filter } from "d3";
 
 const notFloatRegex = /[^\d\.]/
 const mod = (n: number, m: number) => (n % m + m) % m;
