@@ -91,17 +91,17 @@ export const exportCells = (filename: string, cellsAndSections: CellAndSections[
 
 const lerp = (a: number, b: number, alpha: number) => a + alpha * (b - a);
 
-
 export const calculatePeaks = (data: Datum[], threshold = 1): Peak[] => data.reduce((accumulator, current, idx, arr) => {
   if (idx == 0) { return accumulator; }
   const previous = arr[idx - 1];
   if (previous[1] < threshold && current[1] > threshold) {
-    return [...accumulator, { start: lerp(previous[0], current[0], current[1] - threshold), end: -1, length: 0 }];
+    const intersection = lerp(previous[0], current[0], ((threshold - previous[1]) / (current[1] - previous[1])))
+    return [...accumulator, { start: intersection, end: -1, length: 0 }];
   } else if (previous[1] > threshold && current[1] < threshold) {
     const currentIntersection = accumulator[accumulator.length - 1]
     if (currentIntersection) {
-      const end = lerp(current[0], previous[0], previous[1] - threshold)
-      return [...accumulator.slice(0, -1), { ...currentIntersection, end, length: end - currentIntersection.start }];
+      const intersection = lerp(current[0], previous[0], ((threshold - current[1]) / (previous[1] - current[1])))
+      return [...accumulator.slice(0, -1), { ...currentIntersection, end: intersection, length: intersection - currentIntersection.start }];
     }
   }
   return accumulator
