@@ -15,6 +15,16 @@ test('peak calculation with multiple points above peak', () => {
   expect(calculatePeaks(testData, 1.5)).toStrictEqual([{start: 0.25, end: 2.75, length: 2.5}])
 });
 
+test('peak calculation starting and ending above threhsold', () => {
+  const testData: Datum[] = [[0, 2], [1, 1], [2, 1], [3, 1], [4, 1], [5, 2]]
+  expect(calculatePeaks(testData, 1.5)).toStrictEqual([{start: 0, end: 0.5, length: 0.5}, { start: 4.5, end: 5, length: 0.5 }])
+});
+
+test('peak calculation starting and ending above threhsold after multiple points above', () => {
+  const testData: Datum[] = [[0, 2], [1, 1], [2, 1], [3, 1], [4, 2], [5, 2]]
+  expect(calculatePeaks(testData, 1.5)).toStrictEqual([{start: 0, end: 0.5, length: 0.5}, { start: 3.5, end: 5, length: 1.5 }])
+});
+
 test('funky data', () => {
   const testData: Datum[] = [
     [8.8, 0.9757259522012046],

@@ -92,11 +92,16 @@ export const exportCells = (filename: string, cellsAndSections: CellAndSections[
 const lerp = (a: number, b: number, alpha: number) => a + alpha * (b - a);
 
 export const calculatePeaks = (data: Datum[], threshold = 1): Peak[] => data.reduce((accumulator, current, idx, arr) => {
-  if (idx == 0) { return accumulator; }
+  if (idx == 0) {
+    if (current[1] > threshold) {
+      return [{ start: current[0], end: -1, length: 0 }]
+    }
+    return accumulator;
+  }
   const previous = arr[idx - 1];
   if (previous[1] < threshold && current[1] > threshold) {
     const intersection = lerp(previous[0], current[0], ((threshold - previous[1]) / (current[1] - previous[1])))
-    return [...accumulator, { start: intersection, end: -1, length: 0 }];
+    return [...accumulator, { start: intersection, end: current[0], length: current[0] - intersection }];
   } else if (previous[1] > threshold && current[1] < threshold) {
     const currentIntersection = accumulator[accumulator.length - 1]
     if (currentIntersection) {
@@ -104,8 +109,15 @@ export const calculatePeaks = (data: Datum[], threshold = 1): Peak[] => data.red
       return [...accumulator.slice(0, -1), { ...currentIntersection, end: intersection, length: intersection - currentIntersection.start }];
     }
   }
+
+  if (idx == arr.length - 1 && current[1] > threshold) {
+    const currentIntersection = accumulator[accumulator.length - 1]
+    if (currentIntersection) {
+      return [...accumulator.slice(0, -1), { ...currentIntersection, end: current[0], length: current[0] - currentIntersection.start }];
+    }
+  }
   return accumulator
-}, [] as Peak[]).filter(p => p.end !== -1);
+}, [] as Peak[])
 
 export const filterPeaksToSection = (peaks: Peak[], section: Section) => peaks.flatMap(p => {
   const startIncluded = p.start >= section.start && p.start <= section.end;
