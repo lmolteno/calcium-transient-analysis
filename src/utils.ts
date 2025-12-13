@@ -1,18 +1,64 @@
-import { convolve } from './utils/convolve'
+export const processCell = (
+  cell: Cell,
+  baselineAdjust: boolean,
+  baselineSamples: number,
+  convolution: number,
+  samplingRate: number
+): Datum[] => {
+  const rawData = cell.data; // Assuming this is number[]
+  const len = rawData.length;
 
-// samples the first `baselineSample` points - to calculate the baseline (denominator of result)
-export const calculateBaseline = (data: Datum[], samples: number): Datum[] => {
-  const baselineSample = data.slice(0, samples).map(d => d[1])
-  const baseline = baselineSample.reduce((d, i) => i + d, 0) / samples
-  return data.map(d => [d[0], d[1] / baseline] as Datum)
-};
+  // 1. Calculate Baseline (Scalar)
+  // No arrays created, just a simple loop sum.
+  let baselineDenominator = 1;
 
-export const convolveData = (data: Datum[], convolution: number, offset: number): Datum[] => {
-  const window = Array.from(Array(convolution)).map(() => 1 / convolution);
-  return convolve(
-    data
-      .map(d => d[1] - offset), window)
-      .map((d, i) => [i, d + offset] as Datum)
+  if (baselineAdjust && len > 0) {
+    let sum = 0;
+    // Cap samples at array length to avoid out-of-bounds
+    const limit = Math.min(len, baselineSamples);
+
+    for (let i = 0; i < limit; i++) {
+      sum += rawData[i];
+    }
+    // If we have 0 samples, avoid divide by zero (though len > 0 checks this)
+    baselineDenominator = limit > 0 ? sum / limit : 1;
+  }
+
+  // 2. Sliding Window Convolution (The "Boxcar" Filter)
+  // We compute the average in a single pass O(N) instead of O(N * WindowSize)
+
+  const result = new Array(len); // Pre-allocate the result array for performance
+  let currentWindowSum = 0;
+
+  // To match standard convolution behavior (same length), we need to handle the start.
+  // This implementation assumes a "Trailing Window" (average of previous N points).
+  // If you need "Centered", you shift the read/write indices by convolution / 2.
+
+  for (let i = 0; i < len; i++) {
+    // A. Apply Baseline Adjustment on the fly
+    const val = rawData[i] / baselineDenominator;
+
+    // B. Add new value to window
+    currentWindowSum += val;
+
+    // C. Subtract old value that fell out of the window
+    if (i >= convolution) {
+      const oldVal = rawData[i - convolution] / baselineDenominator;
+      currentWindowSum -= oldVal;
+    }
+
+    // D. Calculate Average
+    // For the first few items (ramp up), we average by (i + 1)
+    // Once window is full, we average by `convolution`
+    const count = Math.min(i + 1, convolution);
+    const average = currentWindowSum / count;
+
+    // E. Construct Final Datum directly
+    // [Time, Value]
+    result[i] = [i * samplingRate, average];
+  }
+
+  return result;
 };
 
 export const formatSeconds = (seconds: number, decimalPrecision = 0) => {
@@ -31,15 +77,6 @@ export const integrateSamples = (samples: Datum[], baseline: number) => {
       return acc + (next[0] - curr[0]) * ((curr[1] + next[1]) / 2)
     }, 0)
 };
-
-export const processCell = (cell: Cell, baselineAdjust: boolean, baselineSamples: number, convolution: number, samplingRate: number) => {
-  const data = cell.data.map((d, i) => [i, d] as Datum);
-  const baselined = baselineAdjust ? calculateBaseline(data, baselineSamples) : data
-
-  const convolved = convolveData(baselined, convolution, 1)
-  return convolved.map(d => [d[0] * samplingRate, d[1]] as Datum)
-}
-  
 
 export const findErrorsInSection = (section: Partial<Section>): string[] => {
   let errors: string[] = []
@@ -89,35 +126,69 @@ export const exportCells = (filename: string, cellsAndSections: CellAndSections[
   link.click();
 }
 
-const lerp = (a: number, b: number, alpha: number) => a + alpha * (b - a);
+// Calculates x where y crosses the threshold between (x1,y1) and (x2,y2)
+const getIntersectionX = (
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  threshold: number
+): number => {
+  return x1 + (x2 - x1) * ((threshold - y1) / (y2 - y1));
+};
 
-export const calculatePeaks = (data: Datum[], threshold = 1): Peak[] => data.reduce((accumulator, current, idx, arr) => {
-  if (idx == 0) {
-    if (current[1] > threshold) {
-      return [{ start: current[0], end: -1, length: 0 }]
-    }
-    return accumulator;
+export const calculatePeaks = (data: Datum[], threshold = 1): Peak[] => {
+  const peaks: Peak[] = [];
+  const len = data.length;
+
+  if (len === 0) return peaks;
+
+  // 1. Handle the start (Index 0)
+  // If the first point is already above threshold, we start a peak immediately.
+  if (data[0][1] > threshold) {
+    peaks.push({ start: data[0][0], end: -1, length: 0 });
   }
-  const previous = arr[idx - 1];
-  if (previous[1] < threshold && current[1] > threshold) {
-    const intersection = lerp(previous[0], current[0], ((threshold - previous[1]) / (current[1] - previous[1])))
-    return [...accumulator, { start: intersection, end: current[0], length: current[0] - intersection }];
-  } else if (previous[1] > threshold && current[1] < threshold) {
-    const currentIntersection = accumulator[accumulator.length - 1]
-    if (currentIntersection) {
-      const intersection = lerp(current[0], previous[0], ((threshold - current[1]) / (previous[1] - current[1])))
-      return [...accumulator.slice(0, -1), { ...currentIntersection, end: intersection, length: intersection - currentIntersection.start }];
+
+  // 2. Iterate through the data (starting from index 1)
+  for (let i = 1; i < len; i++) {
+    const prev = data[i - 1];
+    const curr = data[i];
+
+    const prevX = prev[0];
+    const prevY = prev[1];
+    const currX = curr[0];
+    const currY = curr[1];
+
+    // Rising Edge: We crossed from below to above
+    if (prevY < threshold && currY > threshold) {
+      const intersection = getIntersectionX(prevX, prevY, currX, currY, threshold);
+      peaks.push({ start: intersection, end: -1, length: 0 });
+    }
+
+    // Falling Edge: We crossed from above to below
+    else if (prevY > threshold && currY < threshold) {
+      const lastPeak = peaks[peaks.length - 1];
+      if (lastPeak && lastPeak.end === -1) { // Ensure we have an open peak
+        const intersection = getIntersectionX(prevX, prevY, currX, currY, threshold);
+
+        // Mutate the existing object instead of slicing/copying array
+        lastPeak.end = intersection;
+        lastPeak.length = intersection - lastPeak.start;
+      }
     }
   }
 
-  if (idx == arr.length - 1 && current[1] > threshold) {
-    const currentIntersection = accumulator[accumulator.length - 1]
-    if (currentIntersection) {
-      return [...accumulator.slice(0, -1), { ...currentIntersection, end: current[0], length: current[0] - currentIntersection.start }];
-    }
+  // 3. Handle the end (Last Index)
+  // If we are still "inside" a peak at the end of the data, clamp it to the last x value.
+  const lastPeak = peaks[peaks.length - 1];
+  if (lastPeak && lastPeak.end === -1) {
+    const lastX = data[len - 1][0];
+    lastPeak.end = lastX;
+    lastPeak.length = lastX - lastPeak.start;
   }
-  return accumulator
-}, [] as Peak[])
+
+  return peaks;
+};
 
 export const filterPeaksToSection = (peaks: Peak[], section: Section) => peaks.flatMap(p => {
   const startIncluded = p.start >= section.start && p.start <= section.end;

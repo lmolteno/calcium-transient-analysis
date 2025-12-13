@@ -1,11 +1,11 @@
 import * as d3 from "d3";
-import { useEffect, useRef } from "react";
-import { useSize } from "ahooks";
-import { formatSeconds } from "../utils";
-import { getSectionColour } from "../constants";
+import {useEffect, useRef} from "react";
+import {useSize} from "ahooks";
+import {formatSeconds} from "../utils";
+import {getSectionColour} from "../constants";
 
 export type Datum = [number, number];
-const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+const margin = {top: 20, right: 30, bottom: 30, left: 40};
 
 interface LineChartProps {
   data: Datum[],
@@ -20,6 +20,15 @@ interface LineChartProps {
 export const generateTickValues = (extent: [number, number]) => {
   const rawTicks = () => {
     const minutesInRange = (extent[1] - extent[0]) / 60
+    if (minutesInRange > 128) {
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map((_, i) => (extent[0] - (extent[0] % 120)) + i * 1200)
+    }
+    if (minutesInRange > 64) {
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map((_, i) => (extent[0] - (extent[0] % 120)) + i * 600)
+    }
+    if (minutesInRange > 32) {
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map((_, i) => (extent[0] - (extent[0] % 120)) + i * 300)
+    }
     if (minutesInRange > 16) {
       return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map((_, i) => (extent[0] - (extent[0] % 120)) + i * 120)
     }
@@ -34,7 +43,7 @@ export const generateTickValues = (extent: [number, number]) => {
   return rawTicks().filter(t => extent[0] <= t && extent[1] >= t)
 }
 
-const LineChart = ({ data, setBaseline, baseline, threshold, setThreshold, extent, sections } : LineChartProps) => {
+const LineChart = ({data, setBaseline, baseline, threshold, setThreshold, extent, sections}: LineChartProps) => {
   const containerRef = useRef<HTMLDivElement>();
   const size = useSize(containerRef);
 
@@ -85,7 +94,7 @@ const LineChart = ({ data, setBaseline, baseline, threshold, setThreshold, exten
     svg.select(".baseline-drag")
       .attr('x', margin.left)
       .attr('width', width)
-      .attr('y',  y(baseline) - 2.5)
+      .attr('y', y(baseline) - 2.5)
       .attr('height', 5)
       // @ts-expect-error d3 types aren't great for calls
       .call(d3.drag().on('drag', (e) => setBaseline(y.invert(e.y))));
@@ -93,41 +102,49 @@ const LineChart = ({ data, setBaseline, baseline, threshold, setThreshold, exten
     svg.select(".threshold")
       .attr('x1', margin.left)
       .attr('x2', width + margin.left)
-      .attr('y1',  y(threshold))
-      .attr('y2',  y(threshold));
+      .attr('y1', y(threshold))
+      .attr('y2', y(threshold));
 
     svg.select(".threshold-drag")
       .attr('x', margin.left)
       .attr('width', width)
-      .attr('y',  y(threshold) - 2.5)
+      .attr('y', y(threshold) - 2.5)
       .attr('height', 5)
       // @ts-expect-error d3 types aren't great for calls
       .call(d3.drag().on('drag', (e) => setThreshold(y.invert(e.y))))
 
-    svg.select(".dots")
-      .selectAll(".dot")
-      .data(filteredData)
-      .join("circle")
-        .classed('dot', true)
-        .attr("cx", d => x(d[0]) )
-        .attr("cy", d => y(d[1]) )
-        .attr("r", 2)
-        .attr("fill", "#69b3a2");
+      const dotGroup = svg
+        .select(".dots");
+
+      if (filteredData.length < 1000) {
+        dotGroup
+          .selectAll(".dot")
+          .data(filteredData)
+          .join("circle")
+          .classed("dot", true)
+          .attr("cx", (d) => x(d[0]))
+          .attr("cy", (d) => y(d[1]))
+          .attr("r", 2)
+          .attr("fill", "#69b3a2");
+      } else {
+        // Clear dots if zoomed out too far to improve performance
+        dotGroup.selectAll(".dot").remove();
+      }
 
     svg.select(".sections")
       .selectAll(".section")
       // @ts-ignore
       .data(sections, (d: Section) => d.name)
       .join("rect")
-        .classed("section", true)
-        .attr("stroke", d => getSectionColour(d.name))
-        .attr("fill", d => getSectionColour(d.name))
-        .attr("fill-opacity", 0.25)
-        .attr("stroke-opacity", 0.5)
-        .attr("x", d => Math.max(margin.left, x(d.start)))
-        .attr("y", margin.top)
-        .attr("width", d => Math.min(x(d.end), size.width - margin.right) - Math.max(margin.left, x(d.start)))
-        .attr("height", height);
+      .classed("section", true)
+      .attr("stroke", d => getSectionColour(d.name))
+      .attr("fill", d => getSectionColour(d.name))
+      .attr("fill-opacity", 0.25)
+      .attr("stroke-opacity", 0.5)
+      .attr("x", d => Math.max(margin.left, x(d.start)))
+      .attr("y", margin.top)
+      .attr("width", d => Math.min(x(d.end), size.width - margin.right) - Math.max(margin.left, x(d.start)))
+      .attr("height", height);
   }, [data, size, baseline, extent, sections, setBaseline])
 
   return (
@@ -139,7 +156,7 @@ const LineChart = ({ data, setBaseline, baseline, threshold, setThreshold, exten
         <path className="area" fill="#69b3a23f" stroke="#69b3a2"></path>
         <rect className="baseline-drag cursor-n-resize" opacity={0}></rect>
         <rect className="threshold-drag cursor-n-resize" opacity={0}></rect>
-        <line className="threshold" stroke-width="2" stroke="#b3a269"></line>
+        <line className="threshold" strokeWidth="2" stroke="#b3a269"></line>
         <g className="axisBottom"></g>
         <g className="axisLeft"></g>
       </svg>

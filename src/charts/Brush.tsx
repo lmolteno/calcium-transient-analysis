@@ -43,7 +43,11 @@ const Brush = ({ data, baseline, setExtent, setResetFunc } : BrushProps) => {
 
     // @ts-ignore
     const onBrushed = ({ selection }) => {
-      setExtent(selection?.map(x.invert, x));
+      if (selection == null) {
+        setExtent(undefined);
+      } else if (selection[0] < selection[1]) {
+        setExtent(selection?.map(x.invert, x));
+      }
      };
 
     svg.select(".axisBottom")

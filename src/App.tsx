@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react'
-import './App.css'
-import { CellManager } from './DataManager'
-import { CellDisplay } from './CellDisplay'
-import { SectionManager } from './SectionManager'
-import { Navbar, NavbarBrand } from '@nextui-org/react'
-import { findErrorsInSection, processCell } from './utils'
-import { CellProperties } from './CellProperties'
+import React, { useState, useMemo } from "react";
+import "./App.css";
+import { CellManager } from "./DataManager";
+import { CellDisplay } from "./CellDisplay";
+import { SectionManager } from "./SectionManager";
+import { Navbar, NavbarBrand } from "@nextui-org/react";
+import { findErrorsInSection, processCell } from "./utils";
+import { CellProperties } from "./CellProperties";
 
 function App() {
   const [convolution, setConvolution] = useState(1);
@@ -13,17 +13,31 @@ function App() {
   const [baselineSamples, setBaselineSamples] = useState(30);
   const [baselineEnabled, setBaselineEnabled] = useState(true);
   const [sections, setSections] = useState<Section[]>([]);
-  const [selectedCell, setSelectedCell] = useState<Cell | undefined>()
-  const [updateCell, setUpdateCell] = useState<(update: (c: Cell) => Cell) => void>(() => {})
-  const [goPrevious, setGoPrevious] = useState<() => void>(() => {})
-  const [goNext, setGoNext] = useState<() => void>(() => {})
+  const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
+  const [updateCell, setUpdateCell] = useState<
+    (update: (c: Cell) => Cell) => void
+  >(() => {});
+  const [goPrevious, setGoPrevious] = useState<() => void>(() => {});
+  const [goNext, setGoNext] = useState<() => void>(() => {});
 
   const processedCellData = useMemo(
-    () => selectedCell ? processCell(selectedCell, baselineEnabled, baselineSamples, convolution, samplingRate) : [],
-    [selectedCell, baselineEnabled, baselineSamples, convolution, samplingRate]
+    () =>
+      selectedCell
+        ? processCell(
+            selectedCell,
+            baselineEnabled,
+            baselineSamples,
+            convolution,
+            samplingRate,
+          )
+        : [],
+    [selectedCell, baselineEnabled, baselineSamples, convolution, samplingRate],
   );
 
-  const validSections = useMemo(() => sections.filter(s => findErrorsInSection(s).length === 0), [sections]);
+  const validSections = useMemo(
+    () => sections.filter((s) => findErrorsInSection(s).length === 0),
+    [sections],
+  );
 
   return (
     <>
@@ -37,10 +51,14 @@ function App() {
           <aside className="w-full sm:w-1/3 md:w-1/4 px-2">
             <div className="sticky top-0 p-4 w-full">
               <CellManager
-                setData={setSelectedCell} setUpdateCell={setUpdateCell}
-                sampleRate={samplingRate} setSampleRate={setSamplingRate}
-                baselineSamples={baselineSamples} setBaselineSamples={setBaselineSamples}
-                baselineEnabled={baselineEnabled} setBaselineEnabled={setBaselineEnabled}
+                setData={setSelectedCell}
+                setUpdateCell={setUpdateCell}
+                sampleRate={samplingRate}
+                setSampleRate={setSamplingRate}
+                baselineSamples={baselineSamples}
+                setBaselineSamples={setBaselineSamples}
+                baselineEnabled={baselineEnabled}
+                setBaselineEnabled={setBaselineEnabled}
                 convolution={convolution}
                 sections={validSections}
                 setGoPrevious={setGoPrevious}
@@ -59,22 +77,27 @@ function App() {
             />
             <div className="flex gap-5">
               <CellProperties
-                cell={selectedCell} updateCell={updateCell}
-                convolution={convolution} setConvolution={setConvolution}
+                cell={selectedCell}
+                updateCell={updateCell}
+                convolution={convolution}
+                setConvolution={setConvolution}
                 sections={sections}
                 mappedData={processedCellData}
                 goPrevious={goPrevious}
                 goNext={goNext}
               />
-              <SectionManager sections={sections} setSections={setSections} sampleRate={samplingRate} />
+              <SectionManager
+                sections={sections}
+                setSections={setSections}
+                sampleRate={samplingRate}
+              />
             </div>
           </main>
         </div>
       </div>
-      <div className="p-8 max-w-screen-xl m-auto">
-      </div>
+      <div className="p-8 max-w-screen-xl m-auto"></div>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

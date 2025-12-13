@@ -36,7 +36,7 @@ const parseCsv = (csv: string): Cell[] => {
 
     cells
       .filter(c => !isNaN(parseFloat(c)))
-      .forEach((c, i) => records[i].data = [...records[i].data, parseFloat(c)])
+      .forEach((c, i) => records[i].data.push(parseFloat(c)))
   })
   return records
 }
