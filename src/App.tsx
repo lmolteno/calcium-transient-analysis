@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import "./App.css";
 import { CellManager } from "./DataManager";
 import { CellDisplay } from "./CellDisplay";
