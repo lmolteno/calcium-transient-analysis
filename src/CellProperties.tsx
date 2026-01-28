@@ -85,7 +85,7 @@ export const CellProperties = ({ cell, updateCell, convolution, setConvolution, 
         <Slider
           label="threshold (for peaks)"
           value={cell?.peakThreshold}
-          marks={[{ value: 0, label: '0' }, { value: maxThreshold / 2, label: maxThreshold / 2 }, { value: maxThreshold, label: maxThreshold }]}
+          marks={[{ value: 0, label: '0' }, { value: maxThreshold / 2, label: (maxThreshold / 2).toString() }, { value: maxThreshold, label: maxThreshold.toString() }]}
           minValue={0}
           step={0.01}
           maxValue={maxThreshold}
