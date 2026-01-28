@@ -1,6 +1,6 @@
-import { Divider, Slider, Checkbox, Button } from "@nextui-org/react";
+import {Divider, Slider, Checkbox, Button, Input} from "@nextui-org/react";
 import { calculatePeaks, filterPeaksToSection, integrateSamples } from "./utils";
-import { useCallback, useMemo } from "react";
+import {useCallback, useMemo, useState} from "react";
 import leftChevron from "./assets/left.svg?raw"
 import rightChevron from "./assets/right.svg?raw"
 import { getSectionColour } from "./constants";
@@ -17,6 +17,7 @@ interface CellPropertiesProps {
 }
 
 export const CellProperties = ({ cell, updateCell, convolution, setConvolution, sections, mappedData, goPrevious, goNext }: CellPropertiesProps) => {
+  const [maxThreshold, setMaxThreshold] = useState(2);
   const updateBaseline = useCallback((bl: number) => {
     updateCell(c => ({...c, baseline: bl}))
   }, [updateCell]);
@@ -84,11 +85,23 @@ export const CellProperties = ({ cell, updateCell, convolution, setConvolution, 
         <Slider
           label="threshold (for peaks)"
           value={cell?.peakThreshold}
-          marks={[{ value: 0, label: '0' }, { value: 1, label: '1' }, { value: 2, label: '2' }]}
+          marks={[{ value: 0, label: '0' }, { value: maxThreshold / 2, label: maxThreshold / 2 }, { value: maxThreshold, label: maxThreshold }]}
           minValue={0}
           step={0.01}
-          maxValue={2}
+          maxValue={maxThreshold}
           onChange={e => updateThreshold(e as number)}
+        />
+        <Input
+          label="Max Threshold"
+          type="number"
+          value={maxThreshold.toString()}
+          onValueChange={v => {
+            const parsed = parseFloat(v)
+            if (!Number.isNaN(parsed) && parsed >= 2) {
+              setMaxThreshold(parsed);
+            } else {
+            }
+          }}
         />
         <Checkbox isSelected={cell.excluded} onValueChange={updateExcluded}>Excluded</Checkbox>
         <div className="grid grid-cols-2 gap-3">
