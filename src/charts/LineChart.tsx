@@ -1,151 +1,245 @@
 import * as d3 from "d3";
-import {useEffect, useRef} from "react";
-import {useSize} from "ahooks";
-import {formatSeconds} from "../utils";
-import {getSectionColour} from "../constants";
+import { useEffect, useRef } from "react";
+import { useSize } from "ahooks";
+import { formatSeconds } from "../utils";
+import { getSectionColour } from "../constants";
 
 export type Datum = [number, number];
-const margin = {top: 20, right: 30, bottom: 30, left: 40};
+const margin = { top: 20, right: 30, bottom: 30, left: 40 };
 
 interface LineChartProps {
-  data: Datum[],
-  sections: Section[]
-  baseline: number,
-  setBaseline: (bl: number) => void,
-  threshold: number,
-  setThreshold: (th: number) => void,
-  extent: [number, number] | undefined,
+  data: Datum[];
+  sections: Section[];
+  baseline: number;
+  setBaseline: (bl: number) => void;
+  threshold: number;
+  setThreshold: (th: number) => void;
+  extent: [number, number] | undefined;
 }
 
 export const generateTickValues = (extent: [number, number]) => {
   const rawTicks = () => {
-    const minutesInRange = (extent[1] - extent[0]) / 60
+    const minutesInRange = (extent[1] - extent[0]) / 60;
+    if (minutesInRange > 2048) {
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map(
+        (_, i) => extent[0] - (extent[0] % 120) + i * 9600 * 2,
+      );
+    }
+    if (minutesInRange > 1024) {
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map(
+        (_, i) => extent[0] - (extent[0] % 120) + i * 9600,
+      );
+    }
+    if (minutesInRange > 512) {
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map(
+        (_, i) => extent[0] - (extent[0] % 120) + i * 4800,
+      );
+    }
+    if (minutesInRange > 256) {
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map(
+        (_, i) => extent[0] - (extent[0] % 120) + i * 2400,
+      );
+    }
     if (minutesInRange > 128) {
-      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map((_, i) => (extent[0] - (extent[0] % 120)) + i * 1200)
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map(
+        (_, i) => extent[0] - (extent[0] % 120) + i * 1200,
+      );
     }
     if (minutesInRange > 64) {
-      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map((_, i) => (extent[0] - (extent[0] % 120)) + i * 600)
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map(
+        (_, i) => extent[0] - (extent[0] % 120) + i * 600,
+      );
     }
     if (minutesInRange > 32) {
-      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map((_, i) => (extent[0] - (extent[0] % 120)) + i * 300)
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map(
+        (_, i) => extent[0] - (extent[0] % 120) + i * 300,
+      );
     }
     if (minutesInRange > 16) {
-      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map((_, i) => (extent[0] - (extent[0] % 120)) + i * 120)
+      return Array.from(Array(Math.ceil(minutesInRange / 2) + 1)).map(
+        (_, i) => extent[0] - (extent[0] % 120) + i * 120,
+      );
     }
     if (minutesInRange > 8) {
-      return Array.from(Array(Math.ceil(minutesInRange) + 1)).map((_, i) => (extent[0] - (extent[0] % 60)) + i * 60)
+      return Array.from(Array(Math.ceil(minutesInRange) + 1)).map(
+        (_, i) => extent[0] - (extent[0] % 60) + i * 60,
+      );
     }
     if (minutesInRange > 4) {
-      return Array.from(Array(Math.ceil(minutesInRange * 2) + 1)).map((_, i) => (extent[0] - (extent[0] % 30)) + i * 30)
+      return Array.from(Array(Math.ceil(minutesInRange * 2) + 1)).map(
+        (_, i) => extent[0] - (extent[0] % 30) + i * 30,
+      );
     }
-    return Array.from(Array(Math.ceil(minutesInRange * 4) + 1)).map((_, i) => (extent[0] - (extent[0] % 15)) + i * 15)
-  }
-  return rawTicks().filter(t => extent[0] <= t && extent[1] >= t)
-}
+    return Array.from(Array(Math.ceil(minutesInRange * 4) + 1)).map(
+      (_, i) => extent[0] - (extent[0] % 15) + i * 15,
+    );
+  };
+  return rawTicks().filter((t) => extent[0] <= t && extent[1] >= t);
+};
 
-const LineChart = ({data, setBaseline, baseline, threshold, setThreshold, extent, sections}: LineChartProps) => {
+const LineChart = ({
+  data,
+  setBaseline,
+  baseline,
+  threshold,
+  setThreshold,
+  extent,
+  sections,
+}: LineChartProps) => {
   const containerRef = useRef<HTMLDivElement>();
   const size = useSize(containerRef);
 
   useEffect(() => {
     if (!size) {
-      return
+      return;
     }
 
-    const filteredData = data.filter(d => !extent || (extent[0] <= d[0] && d[0] <= extent[1]));
+    const filteredData = data.filter(
+      (d) => !extent || (extent[0] <= d[0] && d[0] <= extent[1]),
+    );
 
     const width = size.width - (margin.left + margin.right);
     const height = size.height - (margin.top + margin.bottom) - 10;
 
-    const svg = d3.select("#lineChart")
+    const svg = d3
+      .select("#lineChart")
       .attr("width", size.width)
       .attr("height", size.height - 10)
+      .on("mousemove", (event) => {
+        const [mx] = d3.pointer(event);
+        if (mx < margin.left || mx > width + margin.left) {
+          svg.select(".hover-line").attr("opacity", 0);
+          svg.select(".hover-label").attr("opacity", 0);
+          return;
+        }
+        const timeValue = x.invert(mx);
+        svg
+          .select(".hover-line")
+          .attr("x1", mx)
+          .attr("x2", mx)
+          .attr("y1", margin.top - 5 + 20)
+          .attr("y2", height + margin.top)
+          .attr("opacity", 1);
+        svg
+          .select(".hover-label")
+          .attr("x", mx)
+          .attr("y", margin.top - 5)
+          .attr("opacity", 1)
+          .text(formatSeconds(timeValue));
+        svg
+          .select(".hover-label-seconds")
+          .attr("x", mx)
+          .attr("y", margin.top - 5 + 14)
+          .attr("opacity", 1)
+          .text(`${timeValue.toFixed(1)}s`);
+      })
+      .on("mouseleave", () => {
+        svg.select(".hover-line").attr("opacity", 0);
+        svg.select(".hover-label").attr("opacity", 0);
+        svg.select(".hover-label-seconds").attr("opacity", 0);
+      });
 
+    const xs = filteredData.map((d) => d[0]);
+    const ys = filteredData.map((d) => d[1]);
 
-    const xs = filteredData.map(d => d[0])
-    const ys = filteredData.map(d => d[1])
-
-    const xExtent = [d3.min(xs)!, d3.max(xs)!] as [number, number]
-    const x = d3.scaleLinear()
+    const xExtent = [d3.min(xs)!, d3.max(xs)!] as [number, number];
+    const x = d3
+      .scaleLinear()
       .domain(xExtent)
       .range([margin.left, width + margin.left]);
 
-    const y = d3.scaleLinear()
+    const y = d3
+      .scaleLinear()
       .domain([d3.min(ys)!, d3.max(ys)!])
       .range([height + margin.top, margin.top]);
 
-    svg.select(".axisBottom")
+    svg
+      .select<SVGGElement>(".axisBottom")
       .attr("transform", `translate(0, ${height + margin.top})`)
-      // @ts-expect-error d3 types aren't great for calls
-      .call(d3.axisBottom(x).tickValues(generateTickValues(xExtent)).tickFormat(n => formatSeconds(n)));
-
-    svg.select(".axisLeft")
-      .attr("transform", `translate(${margin.left}, 0)`)
-      // @ts-expect-error d3 types aren't great for calls
-      .call(d3.axisLeft(y));
-
-    svg.select(".area")
-      .attr("d", d3.area()
-        .x(d => x(d[0]))
-        .y1(d => Math.min(y(baseline), y(d[1])))
-        .y0(y(baseline))(filteredData)
+      .call(
+        d3
+          .axisBottom(x)
+          .tickValues(generateTickValues(xExtent))
+          .tickFormat((n) => formatSeconds(n.valueOf())),
       );
 
-    svg.select(".baseline-drag")
-      .attr('x', margin.left)
-      .attr('width', width)
-      .attr('y', y(baseline) - 2.5)
-      .attr('height', 5)
+    svg
+      .select<SVGGElement>(".axisLeft")
+      .attr("transform", `translate(${margin.left}, 0)`)
+      .call(d3.axisLeft(y));
+
+    svg.select(".area").attr(
+      "d",
+      d3
+        .area()
+        .x((d) => x(d[0]))
+        .y1((d) => Math.min(y(baseline), y(d[1])))
+        .y0(y(baseline))(filteredData),
+    );
+
+    svg
+      .select(".baseline-drag")
+      .attr("x", margin.left)
+      .attr("width", width)
+      .attr("y", y(baseline) - 2.5)
+      .attr("height", 5)
       // @ts-expect-error d3 types aren't great for calls
-      .call(d3.drag().on('drag', (e) => setBaseline(y.invert(e.y))));
+      .call(d3.drag().on("drag", (e) => setBaseline(y.invert(e.y))));
 
-    svg.select(".threshold")
-      .attr('x1', margin.left)
-      .attr('x2', width + margin.left)
-      .attr('y1', y(threshold))
-      .attr('y2', y(threshold));
+    svg
+      .select(".threshold")
+      .attr("x1", margin.left)
+      .attr("x2", width + margin.left)
+      .attr("y1", y(threshold))
+      .attr("y2", y(threshold));
 
-    svg.select(".threshold-drag")
-      .attr('x', margin.left)
-      .attr('width', width)
-      .attr('y', y(threshold) - 2.5)
-      .attr('height', 5)
+    svg
+      .select(".threshold-drag")
+      .attr("x", margin.left)
+      .attr("width", width)
+      .attr("y", y(threshold) - 2.5)
+      .attr("height", 5)
       // @ts-expect-error d3 types aren't great for calls
-      .call(d3.drag().on('drag', (e) => setThreshold(y.invert(e.y))))
+      .call(d3.drag().on("drag", (e) => setThreshold(y.invert(e.y))));
 
-      const dotGroup = svg
-        .select(".dots");
+    const dotGroup = svg.select(".dots");
 
-      if (filteredData.length < 1000) {
-        dotGroup
-          .selectAll(".dot")
-          .data(filteredData)
-          .join("circle")
-          .classed("dot", true)
-          .attr("cx", (d) => x(d[0]))
-          .attr("cy", (d) => y(d[1]))
-          .attr("r", 2)
-          .attr("fill", "#69b3a2");
-      } else {
-        // Clear dots if zoomed out too far to improve performance
-        dotGroup.selectAll(".dot").remove();
-      }
+    if (filteredData.length < 1000) {
+      dotGroup
+        .selectAll(".dot")
+        .data(filteredData)
+        .join("circle")
+        .classed("dot", true)
+        .attr("cx", (d) => x(d[0]))
+        .attr("cy", (d) => y(d[1]))
+        .attr("r", 2)
+        .attr("fill", "#69b3a2");
+    } else {
+      // Clear dots if zoomed out too far to improve performance
+      dotGroup.selectAll(".dot").remove();
+    }
 
-    svg.select(".sections")
+    svg
+      .select(".sections")
       .selectAll(".section")
       // @ts-ignore
       .data(sections, (d: Section) => d.name)
       .join("rect")
       .classed("section", true)
-      .attr("stroke", d => getSectionColour(d.name))
-      .attr("fill", d => getSectionColour(d.name))
+      .attr("stroke", (d) => getSectionColour(d.name))
+      .attr("fill", (d) => getSectionColour(d.name))
       .attr("fill-opacity", 0.25)
       .attr("stroke-opacity", 0.5)
-      .attr("x", d => Math.max(margin.left, x(d.start)))
+      .attr("x", (d) => Math.max(margin.left, x(d.start)))
       .attr("y", margin.top)
-      .attr("width", d => Math.min(x(d.end), size.width - margin.right) - Math.max(margin.left, x(d.start)))
+      .attr(
+        "width",
+        (d) =>
+          Math.min(x(d.end), size.width - margin.right) -
+          Math.max(margin.left, x(d.start)),
+      )
       .attr("height", height);
-  }, [data, size, baseline, extent, sections, setBaseline])
+  }, [data, size, baseline, extent, sections, setBaseline]);
 
   return (
     // @ts-ignore
@@ -157,6 +251,33 @@ const LineChart = ({data, setBaseline, baseline, threshold, setThreshold, extent
         <rect className="baseline-drag cursor-n-resize" opacity={0}></rect>
         <rect className="threshold-drag cursor-n-resize" opacity={0}></rect>
         <line className="threshold" strokeWidth="2" stroke="#b3a269"></line>
+        <line
+          className="hover-line"
+          stroke="#888"
+          strokeWidth="1"
+          strokeDasharray="4 2"
+          opacity={0}
+        ></line>
+        <text
+          className="hover-label"
+          fontSize="12"
+          fill="#333"
+          stroke="white"
+          strokeWidth="4"
+          paintOrder="stroke"
+          textAnchor="middle"
+          opacity={0}
+        ></text>
+        <text
+          className="hover-label-seconds"
+          fontSize="11"
+          fill="#666"
+          stroke="white"
+          strokeWidth="4"
+          paintOrder="stroke"
+          textAnchor="middle"
+          opacity={0}
+        ></text>
         <g className="axisBottom"></g>
         <g className="axisLeft"></g>
       </svg>

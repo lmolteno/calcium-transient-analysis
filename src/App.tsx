@@ -60,6 +60,7 @@ function App() {
                 baselineEnabled={baselineEnabled}
                 setBaselineEnabled={setBaselineEnabled}
                 convolution={convolution}
+                setConvolution={setConvolution}
                 sections={validSections}
                 setGoPrevious={setGoPrevious}
                 setGoNext={setGoNext}

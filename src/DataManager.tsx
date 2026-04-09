@@ -1,28 +1,52 @@
-import { ChangeEventHandler, Dispatch, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ChangeEventHandler,
+  Dispatch,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Divider, Input, Radio, RadioGroup, Switch } from "@nextui-org/react";
-import { calculatePeaks, exportCells, filterPeaksToSection, integrateSamples, processCell } from "./utils";
+import {
+  Button,
+  Divider,
+  Input,
+  Radio,
+  RadioGroup,
+  Switch,
+} from "@nextui-org/react";
+import {
+  calculatePeaks,
+  exportCells,
+  filterPeaksToSection,
+  integrateSamples,
+  processCell,
+} from "./utils";
 import { getSectionColour } from "./constants";
 
-const notFloatRegex = /[^\d\.]/
-const mod = (n: number, m: number) => (n % m + m) % m;
+const notFloatRegex = /[^\d\.]/;
+const mod = (n: number, m: number) => ((n % m) + m) % m;
 
 const parseCsv = (csv: string): Cell[] => {
-  let records: Cell[] = []
-  csv.split('\n').map(line => {
-    const cells = line.split(',')
+  let records: Cell[] = [];
+  csv.split("\n").map((line) => {
+    const cells = line.split(",");
 
     // header row
-    if (cells.some(cell => isNaN(cell as unknown as number)) && records.length == 0) {
+    if (
+      cells.some((cell) => isNaN(cell as unknown as number)) &&
+      records.length == 0
+    ) {
       records = cells.map((c, idx) => ({
         id: idx,
         name: c.length > 0 ? c : `Cell ${idx + 1}`,
         data: [],
         baseline: 1,
         peakThreshold: 1.1,
-        excluded: false
-      }))
-      return
+        excluded: false,
+      }));
+      return;
     } else if (records.length == 0) {
       records = cells.map((_, idx) => ({
         id: idx,
@@ -30,138 +54,191 @@ const parseCsv = (csv: string): Cell[] => {
         data: [],
         baseline: 1,
         peakThreshold: 1.1,
-        excluded: false
-      }))
+        excluded: false,
+      }));
     }
 
     cells
-      .filter(c => !isNaN(parseFloat(c)))
-      .forEach((c, i) => records[i].data.push(parseFloat(c)))
-  })
-  return records
-}
+      .filter((c) => !isNaN(parseFloat(c)))
+      .forEach((c, i) => records[i].data.push(parseFloat(c)));
+  });
+  return records;
+};
 
-type CellUpdateFunc = (c: Cell) => Cell
+type CellUpdateFunc = (c: Cell) => Cell;
 
 interface CellManagerProps {
-  setData: (c: Cell | undefined) => void
-  setUpdateCell: Dispatch<(update: CellUpdateFunc) => void>,
-  setSampleRate: (sample: number) => void
-  sampleRate: number
-  setBaselineSamples: (sample: number) => void
-  baselineSamples: number
-  setBaselineEnabled: (disabled: boolean) => void
-  baselineEnabled: boolean
-  convolution: number
-  sections: Section[]
-  setGoPrevious: Dispatch<() => void>
-  setGoNext: Dispatch<() => void>
+  setData: (c: Cell | undefined) => void;
+  setUpdateCell: Dispatch<(update: CellUpdateFunc) => void>;
+  setSampleRate: (sample: number) => void;
+  sampleRate: number;
+  setBaselineSamples: (sample: number) => void;
+  baselineSamples: number;
+  setBaselineEnabled: (disabled: boolean) => void;
+  baselineEnabled: boolean;
+  convolution: number;
+  setConvolution: (convolution: number) => void;
+  sections: Section[];
+  setGoPrevious: Dispatch<() => void>;
+  setGoNext: Dispatch<() => void>;
 }
 
 export const CellManager = ({
-  setData, setUpdateCell,
-  sampleRate, setSampleRate,
-  baselineSamples, setBaselineSamples,
-  baselineEnabled, setBaselineEnabled,
-  convolution, sections,
-  setGoNext, setGoPrevious }: CellManagerProps) => {
+  setData,
+  setUpdateCell,
+  sampleRate,
+  setSampleRate,
+  baselineSamples,
+  setBaselineSamples,
+  baselineEnabled,
+  setBaselineEnabled,
+  convolution,
+  setConvolution,
+  sections,
+  setGoNext,
+  setGoPrevious,
+}: CellManagerProps) => {
   const [selectedFile, setSelectedFile] = useState<File | undefined>();
   const [selectedCell, setSelectedCell] = useState<Cell | undefined>();
   const [cells, setCells] = useState<Cell[]>([]);
-  const [sampleRateString, setSampleRateString] = useState(sampleRate.toString());
+  const [sampleRateString, setSampleRateString] = useState(
+    sampleRate.toString(),
+  );
   const [sampleRateError, setSampleRateError] = useState("");
+  const [convolutionString, setConvolutionString] = useState(
+    convolution.toString(),
+  );
+  const [convolutionError, setConvolutionError] = useState("");
   const inputRef = useRef(null);
-  const orderedCells = useMemo(() => [...cells].sort((a, b) => a.id - b.id), [cells]);
+  const orderedCells = useMemo(
+    () => [...cells].sort((a, b) => a.id - b.id),
+    [cells],
+  );
 
   useEffect(() => {
-    setData(selectedCell)
+    setData(selectedCell);
     // @ts-ignore
     setUpdateCell((old) => {
       return (update: CellUpdateFunc) => {
         if (!selectedCell) {
-          return
+          return;
         }
-        setCells(oldCells => [...oldCells.filter(c => c.id !== selectedCell?.id), update(selectedCell)])
-        setSelectedCell(update(selectedCell))
-      }
+        setCells((oldCells) => [
+          ...oldCells.filter((c) => c.id !== selectedCell?.id),
+          update(selectedCell),
+        ]);
+        setSelectedCell(update(selectedCell));
+      };
     });
   }, [selectedCell, setData]);
 
-  const onFileChange: ChangeEventHandler<HTMLInputElement> = useCallback(e => {
-    if (e.target.files?.length === 1) {
-      setSelectedFile(e.target.files[0])
-    }
-  }, [setSelectedFile])
+  const onFileChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+    (e) => {
+      if (e.target.files?.length === 1) {
+        setSelectedFile(e.target.files[0]);
+      }
+    },
+    [setSelectedFile],
+  );
 
   const cellQuery = useQuery<Cell[]>({
-    queryKey: ['read-file', selectedFile?.name],
-    queryFn: () => new Promise((res, rej) => {
-      if (!selectedFile) {
-        res([])
-        return
-      }
-      const reader = new FileReader()
-      reader.readAsText(selectedFile)
-      reader.onload = () => {
-        res(parseCsv(reader.result as string))
-      }
-      reader.onerror = (ev) => {
-        rej(ev)
-      }
-    })
+    queryKey: ["read-file", selectedFile?.name],
+    queryFn: () =>
+      new Promise((res, rej) => {
+        if (!selectedFile) {
+          res([]);
+          return;
+        }
+        const reader = new FileReader();
+        reader.readAsText(selectedFile);
+        reader.onload = () => {
+          res(parseCsv(reader.result as string));
+        };
+        reader.onerror = (ev) => {
+          rej(ev);
+        };
+      }),
   });
 
   useEffect(() => {
-    const newCells = cellQuery.data ?? []
-    setCells(newCells)
+    const newCells = cellQuery.data ?? [];
+    setCells(newCells);
     if (newCells.length > 0) {
-      setSelectedCell(newCells[0])
+      setSelectedCell(newCells[0]);
     }
   }, [setCells, cellQuery.data]);
 
-  const onCellSelect = useCallback((v: string) => {
-    const selected = cells.find(c => `${c.id}` === v)
-    const selectedIndex = cells.findIndex(c => `${c.id}` === v)
-    if (selected && selectedIndex !== -1) {
-      setSelectedCell(selected)
-    }
-  }, [setSelectedCell, cells, setGoPrevious, setGoNext])
+  const onCellSelect = useCallback(
+    (v: string) => {
+      const selected = cells.find((c) => `${c.id}` === v);
+      const selectedIndex = cells.findIndex((c) => `${c.id}` === v);
+      if (selected && selectedIndex !== -1) {
+        setSelectedCell(selected);
+      }
+    },
+    [setSelectedCell, cells, setGoPrevious, setGoNext],
+  );
 
   useEffect(() => {
     setGoPrevious(() => () => {
-      const selectedIndex = orderedCells.findIndex(c => c.id === selectedCell?.id)
-      setSelectedCell(orderedCells[mod((selectedIndex - 1), orderedCells.length)])
+      const selectedIndex = orderedCells.findIndex(
+        (c) => c.id === selectedCell?.id,
+      );
+      setSelectedCell(
+        orderedCells[mod(selectedIndex - 1, orderedCells.length)],
+      );
     });
     setGoNext(() => () => {
-      const selectedIndex = orderedCells.findIndex(c => c.id === selectedCell?.id)
-      setSelectedCell(orderedCells[(selectedIndex + 1) % orderedCells.length])
+      const selectedIndex = orderedCells.findIndex(
+        (c) => c.id === selectedCell?.id,
+      );
+      setSelectedCell(orderedCells[(selectedIndex + 1) % orderedCells.length]);
     });
   }, [selectedCell, setSelectedCell, setGoNext, setGoPrevious]);
 
   const cellsWithAreas = useQuery({
-    queryKey: ['sectionsWithArea', baselineEnabled, baselineSamples, convolution, sampleRate, orderedCells, sections],
+    queryKey: [
+      "sectionsWithArea",
+      baselineEnabled,
+      baselineSamples,
+      convolution,
+      sampleRate,
+      orderedCells,
+      sections,
+    ],
     queryFn: () => {
-      return orderedCells
-        .map(c => {
-          const processed = processCell(c, baselineEnabled, baselineSamples, convolution, sampleRate)
-          const peaks = calculatePeaks(processed, c.peakThreshold);
-          return {
-            cell: c,
-            sections: sections.map(s => {
-            const samples = processed.filter(d => d[0] <= s.end && d[0] >= s.start)
+      return orderedCells.map((c) => {
+        const processed = processCell(
+          c,
+          baselineEnabled,
+          baselineSamples,
+          convolution,
+          sampleRate,
+        );
+        const peaks = calculatePeaks(processed, c.peakThreshold);
+        return {
+          cell: c,
+          sections: sections.map((s) => {
+            const samples = processed.filter(
+              (d) => d[0] <= s.end && d[0] >= s.start,
+            );
             const filteredPeaks = filterPeaksToSection(peaks, s);
-            const totalPeakTime = filteredPeaks.reduce((s, c) => s + c.length, 0);
-            return {...s, 
+            const totalPeakTime = filteredPeaks.reduce(
+              (s, c) => s + c.length,
+              0,
+            );
+            return {
+              ...s,
               area: integrateSamples(samples, c.baseline),
               peaks: filteredPeaks.length,
               totalPeakTime,
-              proportionPeakTime: totalPeakTime / (s.end - s.start)
-            }
-          })
-         }
-        });
-    }
-  })
+              proportionPeakTime: totalPeakTime / (s.end - s.start),
+            };
+          }),
+        };
+      });
+    },
+  });
 
   useEffect(() => {
     const parsedSampleRate = parseFloat(sampleRateString);
@@ -175,15 +252,36 @@ export const CellManager = ({
     }
     setSampleRate(parsedSampleRate);
     setSampleRateError("");
-  }, [sampleRateString, setSampleRate])
+  }, [sampleRateString, setSampleRate]);
+
+  useEffect(() => {
+    const parsedConvolution = parseFloat(convolutionString);
+    if (isNaN(parsedConvolution) || notFloatRegex.test(convolutionString)) {
+      setConvolutionError("enter a valid number");
+      return;
+    }
+    if (parsedConvolution < 1) {
+      setConvolutionError("enter a number that is at least 1");
+      return;
+    }
+    setConvolution(parsedConvolution);
+    setConvolutionError("");
+  }, [convolutionString, setConvolution]);
 
   return (
     <div className="w-full">
       <div className="flex justify-between w-full items-center pb-3">
         slice upload
-        <input className="hidden" type="file" ref={inputRef} onChange={onFileChange} />
+        <input
+          className="hidden"
+          type="file"
+          ref={inputRef}
+          onChange={onFileChange}
+        />
         {/* @ts-ignore */}
-        <Button onClick={() => inputRef.current?.click()} color="primary">select file</Button>
+        <Button onClick={() => inputRef.current?.click()} color="primary">
+          select file
+        </Button>
       </div>
       <Divider />
       <div className="py-4 grid grid-cols-2 gap-4">
@@ -193,9 +291,13 @@ export const CellManager = ({
           min={1}
           value={baselineSamples.toString()}
           disabled={!baselineEnabled}
-          onValueChange={v => !isNaN(parseInt(v)) ? setBaselineSamples(parseInt(v)) : {} }
+          onValueChange={(v) =>
+            !isNaN(parseInt(v)) ? setBaselineSamples(parseInt(v)) : {}
+          }
         />
-        <Switch isSelected={baselineEnabled} onValueChange={setBaselineEnabled}>calculate baseline</Switch>
+        <Switch isSelected={baselineEnabled} onValueChange={setBaselineEnabled}>
+          calculate baseline
+        </Switch>
         <Input
           className="col-span-2"
           label="sampling rate"
@@ -204,44 +306,93 @@ export const CellManager = ({
           value={sampleRateString}
           onValueChange={setSampleRateString}
         />
+        <Input
+          className="col-span-2"
+          label="convolution length"
+          isInvalid={convolutionError !== ""}
+          errorMessage={convolutionError}
+          value={convolutionString}
+          onValueChange={setConvolutionString}
+        />
       </div>
       <Divider />
-        {!selectedFile &&
-          <p className="text-content4 text-center py-3">select a file to continue</p>}
-        {!!cells.length &&
+      {!selectedFile && (
+        <p className="text-content4 text-center py-3">
+          select a file to continue
+        </p>
+      )}
+      {!!cells.length && (
         <>
           <RadioGroup
             className="w-full pt-3"
             value={`${selectedCell?.id}`}
-            onValueChange={onCellSelect}>
-              <div className="flex flex-row gap-2 w-full pe-4 text-default-500">
-                <p className="flex-grow">{selectedFile?.name}</p>
-                {sections.map(s => <div className="w-16 flex-row flex items-center gap-2 justify-end"><p className="size-4 rounded-md" style={{ backgroundColor: getSectionColour(s.name) }}> </p><p className="text-default-500 text-right">{s.name}</p></div>)}
-              </div>
-              {orderedCells.map(c => {
-                const cellWithArea = cellsWithAreas.data?.find(cwa => cwa.cell.id === c.id);
-                const sections = cellWithArea?.sections ?? []
-                return (
-              <Radio
-                key={c.id}
-                classNames={{
-                  base: "w-full max-w-none",
-                  labelWrapper: "w-full",
-                  label: "w-full justify-end"
-                }}
-                value={`${c.id}`}>
-                  <div className={"flex flex-row gap-2 justify-end w-full" + (c.excluded ? " text-default-500" : '')}>
+            onValueChange={onCellSelect}
+          >
+            <div className="flex flex-row gap-2 w-full pe-4 text-default-500">
+              <p className="flex-grow">{selectedFile?.name}</p>
+              {sections.map((s) => (
+                <div className="w-16 flex-row flex items-center gap-2 justify-end">
+                  <p
+                    className="size-4 rounded-md"
+                    style={{ backgroundColor: getSectionColour(s.name) }}
+                  >
+                    {" "}
+                  </p>
+                  <p className="text-default-500 text-right">{s.name}</p>
+                </div>
+              ))}
+            </div>
+            {orderedCells.map((c) => {
+              const cellWithArea = cellsWithAreas.data?.find(
+                (cwa) => cwa.cell.id === c.id,
+              );
+              const sections = cellWithArea?.sections ?? [];
+              return (
+                <Radio
+                  key={c.id}
+                  classNames={{
+                    base: "w-full max-w-none",
+                    labelWrapper: "w-full",
+                    label: "w-full justify-end",
+                  }}
+                  value={`${c.id}`}
+                >
+                  <div
+                    className={
+                      "flex flex-row gap-2 justify-end w-full" +
+                      (c.excluded ? " text-default-500" : "")
+                    }
+                  >
                     <p className="flex-grow">{c.name}</p>
-                    {sections.map(s => <p className={"w-16 text-right" + (c.excluded ? " line-through" : '')}>{(100 * s.proportionPeakTime).toPrecision(3)}%</p>)}
+                    {sections.map((s) => (
+                      <p
+                        className={
+                          "w-16 text-right" +
+                          (c.excluded ? " line-through" : "")
+                        }
+                      >
+                        {(100 * s.proportionPeakTime).toPrecision(3)}%
+                      </p>
+                    ))}
                   </div>
-               </Radio>)
-                }
-              )}
+                </Radio>
+              );
+            })}
           </RadioGroup>
-          <p className="text-default-500 text-right pe-4">Areas are in (Δf/f)·s</p>
-          <Button className="w-full mt-3" color="primary" onPress={() => exportCells(selectedFile?.name ?? '', cellsWithAreas.data ?? [])}>export</Button>
+          <p className="text-default-500 text-right pe-4">
+            Areas are in (Δf/f)·s
+          </p>
+          <Button
+            className="w-full mt-3"
+            color="primary"
+            onPress={() =>
+              exportCells(selectedFile?.name ?? "", cellsWithAreas.data ?? [])
+            }
+          >
+            export
+          </Button>
         </>
-        }
+      )}
     </div>
-  )
+  );
 };
