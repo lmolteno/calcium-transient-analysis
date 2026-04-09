@@ -5,7 +5,7 @@ This is a webapp developed to help researchers at the University of Otago analys
 ## Usage
 ![image](https://github.com/user-attachments/assets/48da0888-9d21-4c86-bde1-04b63584012d)
 1. There are multiple cells per csv that is uploaded (each csv represents a slice)
-2. Per-slice one can set the sections, which themselves represent times when the cell in question was exposed to a particular chemical, either 4-AP or aCSF)
+2. Per-slice one can set the sections, which themselves represent times when the cell in question was exposed to a particular chemical, either 4-AP or aCSF). You also set the sampling rate and convolution kernel size. This is just a running average to smooth out noise.
 3. Per-cell one can set the baseline (for calculating the area), and the peak threshold.
    - The peak threshold is currently the main purpose of the app, so it is what is shown on the left panel per-cell.
    - As the peak threshold is adjusted, the proportion of time spent above the threshold per section is shown and updated in real-time.
