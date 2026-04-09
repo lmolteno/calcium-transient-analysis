@@ -299,7 +299,6 @@ export const CellManager = ({
           calculate baseline
         </Switch>
         <Input
-          className="col-span-2"
           label="sampling rate"
           isInvalid={sampleRateError !== ""}
           errorMessage={sampleRateError}
@@ -307,7 +306,6 @@ export const CellManager = ({
           onValueChange={setSampleRateString}
         />
         <Input
-          className="col-span-2"
           label="convolution length"
           isInvalid={convolutionError !== ""}
           errorMessage={convolutionError}
